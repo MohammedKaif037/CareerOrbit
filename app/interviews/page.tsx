@@ -4,6 +4,7 @@ import { PlusCircle, Calendar } from "lucide-react"
 import Link from "next/link"
 import { InterviewCalendar } from "@/components/interview-calendar"
 
+//Use this to track interview status
 export default function Interviews() {
   return (
     <div className="container mx-auto p-6 space-y-8">
