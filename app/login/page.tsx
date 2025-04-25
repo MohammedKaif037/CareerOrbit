@@ -1,20 +1,29 @@
 // app/login/page.tsx
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Rocket, ArrowRight } from 'lucide-react';
+import { Rocket } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const { signIn, isLoading } = useAuth();
+  const { signIn, isLoading, user } = useAuth();
+  const router = useRouter();
+
+  // Check if user is already logged in and redirect if needed
+  useEffect(() => {
+    if (user) {
+      router.push('/dashboard');
+    }
+  }, [user, router]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,9 +34,18 @@ export default function Login() {
       return;
     }
 
-    const { error } = await signIn(email, password);
-    if (error) {
-      setError(error.message);
+    try {
+      const { error, user } = await signIn(email, password);
+      
+      if (error) {
+        setError(error.message);
+      } else if (user) {
+        // Explicit redirect after successful login
+        router.push('/dashboard');
+      }
+    } catch (err) {
+      setError('An error occurred during sign in. Please try again.');
+      console.error('Login error:', err);
     }
   };
 
