@@ -5,7 +5,7 @@ import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { AppSidebar } from "@/components/app-sidebar"
 import { SidebarProvider } from "@/components/ui/sidebar"
-
+//Root Layout
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
