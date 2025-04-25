@@ -1,7 +1,7 @@
+// app/applications/new/page.tsx
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -12,23 +12,70 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Rocket, ArrowLeft } from "lucide-react"
 import Link from "next/link"
 import { motion } from "framer-motion"
+import { useAuth } from "@/lib/auth-context"
+import { createApplication } from "@/lib/supabase-client"
+import { useRouter } from "next/navigation"
 
 export default function NewApplication() {
   const [formStep, setFormStep] = useState(0)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const { user } = useAuth()
+  const router = useRouter()
+
+  // Form state
+  const [formData, setFormData] = useState({
+    company_name: '',
+    job_title: '',
+    location: '',
+    job_url: '',
+    application_date: new Date().toISOString().split('T')[0],
+    status: 'Applied',
+    notes: '',
+    salary_range: '',
+    resume_sent: false,
+    cover_letter_sent: false,
+  })
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { id, value } = e.target
+    setFormData(prev => ({ ...prev, [id]: value }))
+  }
+
+  const handleSelectChange = (id: string, value: string) => {
+    setFormData(prev => ({ ...prev, [id]: value }))
+  }
 
   const nextStep = () => setFormStep((prev) => prev + 1)
   const prevStep = () => setFormStep((prev) => prev - 1)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!user) return
+
     setIsSubmitting(true)
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500))
+    try {
+      const applicationData = {
+        ...formData,
+        user_id: user.id,
+        application_date: new Date(formData.application_date).toISOString(),
+        follow_up_required: false,
+        interview_scheduled: false,
+      }
 
-    // Redirect to applications page
-    window.location.href = "/applications"
+      const result = await createApplication(applicationData)
+      
+      if (result) {
+        router.push('/applications')
+      } else {
+        throw new Error('Failed to create application')
+      }
+    } catch (error) {
+      console.error('Error creating application:', error)
+      alert('Failed to create application. Please try again.')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -52,20 +99,53 @@ export default function NewApplication() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="company">Company Name</Label>
-                  <Input id="company" placeholder="e.g. SpaceX" required />
+                  <Label htmlFor="company_name">Company Name</Label>
+                  <Input 
+                    id="company_name" 
+                    placeholder="e.g. SpaceX" 
+                    required 
+                    value={formData.company_name}
+                    onChange={handleChange}
+                  />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="position">Position</Label>
-                  <Input id="position" placeholder="e.g. Frontend Developer" required />
+                  <Label htmlFor="job_title">Position</Label>
+                  <Input 
+                    id="job_title" 
+                    placeholder="e.g. Frontend Developer" 
+                    required 
+                    value={formData.job_title}
+                    onChange={handleChange}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="location">Location</Label>
-                  <Input id="location" placeholder="e.g. Remote, New York, NY" required />
+                  <Input 
+                    id="location" 
+                    placeholder="e.g. Remote, New York, NY" 
+                    required 
+                    value={formData.location}
+                    onChange={handleChange}
+                  />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="jobUrl">Job Posting URL</Label>
-                  <Input id="jobUrl" type="url" placeholder="https://..." />
+                  <Label htmlFor="job_url">Job Posting URL</Label>
+                  <Input 
+                    id="job_url" 
+                    type="url" 
+                    placeholder="https://..." 
+                    value={formData.job_url}
+                    onChange={handleChange}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="salary_range">Salary Range (Optional)</Label>
+                  <Input 
+                    id="salary_range" 
+                    placeholder="e.g. $80,000 - $100,000" 
+                    value={formData.salary_range}
+                    onChange={handleChange}
+                  />
                 </div>
               </CardContent>
               <CardFooter className="flex justify-end">
@@ -84,51 +164,32 @@ export default function NewApplication() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="appliedDate">Date Applied</Label>
-                  <Input id="appliedDate" type="date" required />
+                  <Label htmlFor="application_date">Date Applied</Label>
+                  <Input 
+                    id="application_date" 
+                    type="date" 
+                    required 
+                    value={formData.application_date}
+                    onChange={handleChange}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="status">Status</Label>
-                  <Select defaultValue="applied">
+                  <Select 
+                    defaultValue={formData.status}
+                    onValueChange={(value) => handleSelectChange('status', value)}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Select status" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="applied">Applied</SelectItem>
-                      <SelectItem value="interview">Interview</SelectItem>
-                      <SelectItem value="offer">Offer</SelectItem>
-                      <SelectItem value="rejected">Rejected</SelectItem>
+                      <SelectItem value="Applied">Applied</SelectItem>
+                      <SelectItem value="Interviewing">Interviewing</SelectItem>
+                      <SelectItem value="Offer">Offer</SelectItem>
+                      <SelectItem value="Rejected">Rejected</SelectItem>
+                      <SelectItem value="Archived">Archived</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="resume">Resume Used</Label>
-                  <Input id="resume" type="file" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="notes">Notes</Label>
-                  <Textarea id="notes" placeholder="Any additional notes about this application..." rows={4} />
-                </div>
-              </CardContent>
-              <CardFooter className="flex justify-between">
-                <Button type="button" variant="outline" onClick={prevStep}>
-                  Back
-                </Button>
-                <Button type="submit" disabled={isSubmitting} className="gap-2">
-                  {isSubmitting ? (
-                    <>Processing...</>
-                  ) : (
-                    <>
-                      <Rocket className="h-4 w-4" />
-                      Launch Application
-                    </>
-                  )}
-                </Button>
-              </CardFooter>
-            </motion.div>
-          )}
-        </form>
-      </Card>
-    </div>
-  )
-}
+                  <Label html
