@@ -4,6 +4,7 @@ import { ApplicationsChart } from "@/components/applications-chart"
 import { ResponseTimeChart } from "@/components/response-time-chart"
 import { SuccessRateChart } from "@/components/success-rate-chart"
 
+//Setting up analytics for page
 export default function Analytics() {
   return (
     <div className="container mx-auto p-6 space-y-8">
