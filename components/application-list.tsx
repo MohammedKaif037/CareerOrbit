@@ -1,189 +1,95 @@
-"use client"
-
-import { useState } from "react"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+// components/application-list.tsx
+import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { MoreHorizontal, ExternalLink, Edit, Trash2, CheckCircle, Clock, XCircle, CalendarClock } from "lucide-react"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { motion } from "framer-motion"
+import { Application } from "@/lib/supabase-client"
+import { ExternalLink, MoreHorizontal } from "lucide-react"
+import Link from "next/link"
+import { formatDistanceToNow } from "date-fns"
 
-// Mock data for applications
-const applications = [
-  {
-    id: 1,
-    company: "SpaceX",
-    position: "Frontend Developer",
-    location: "Remote",
-    appliedDate: "2023-04-15",
-    status: "applied",
-    link: "#",
-  },
-  {
-    id: 2,
-    company: "NASA",
-    position: "UI Designer",
-    location: "Houston, TX",
-    appliedDate: "2023-04-10",
-    status: "interview",
-    link: "#",
-  },
-  {
-    id: 3,
-    company: "Blue Origin",
-    position: "Full Stack Developer",
-    location: "Seattle, WA",
-    appliedDate: "2023-04-05",
-    status: "rejected",
-    link: "#",
-  },
-  {
-    id: 4,
-    company: "Google",
-    position: "Software Engineer",
-    location: "Mountain View, CA",
-    appliedDate: "2023-04-01",
-    status: "offer",
-    link: "#",
-  },
-  {
-    id: 5,
-    company: "Microsoft",
-    position: "Product Manager",
-    location: "Redmond, WA",
-    appliedDate: "2023-03-28",
-    status: "applied",
-    link: "#",
-  },
-  {
-    id: 6,
-    company: "Apple",
-    position: "UX Researcher",
-    location: "Cupertino, CA",
-    appliedDate: "2023-03-25",
-    status: "interview",
-    link: "#",
-  },
-  {
-    id: 7,
-    company: "Meta",
-    position: "React Developer",
-    location: "Menlo Park, CA",
-    appliedDate: "2023-03-20",
-    status: "applied",
-    link: "#",
-  },
-  {
-    id: 8,
-    company: "Amazon",
-    position: "Cloud Engineer",
-    location: "Seattle, WA",
-    appliedDate: "2023-03-15",
-    status: "offer",
-    link: "#",
-  },
-]
-
-const getStatusBadge = (status: string) => {
-  switch (status) {
-    case "applied":
-      return (
-        <Badge variant="outline" className="bg-blue-500/10 text-blue-500 border-blue-500/20">
-          <Clock className="mr-1 h-3 w-3" />
-          Applied
-        </Badge>
-      )
-    case "interview":
-      return (
-        <Badge variant="outline" className="bg-yellow-500/10 text-yellow-500 border-yellow-500/20">
-          <CalendarClock className="mr-1 h-3 w-3" />
-          Interview
-        </Badge>
-      )
-    case "offer":
-      return (
-        <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/20">
-          <CheckCircle className="mr-1 h-3 w-3" />
-          Offer
-        </Badge>
-      )
-    case "rejected":
-      return (
-        <Badge variant="outline" className="bg-red-500/10 text-red-500 border-red-500/20">
-          <XCircle className="mr-1 h-3 w-3" />
-          Rejected
-        </Badge>
-      )
-    default:
-      return <Badge variant="outline">{status}</Badge>
-  }
+interface ApplicationListProps {
+  applications: Application[];
+  isLoading: boolean;
 }
 
-export function ApplicationList() {
-  const [hoveredRow, setHoveredRow] = useState<number | null>(null)
-
-  const formatDate = (dateString: string) => {
-    const options: Intl.DateTimeFormatOptions = { year: "numeric", month: "short", day: "numeric" }
-    return new Date(dateString).toLocaleDateString(undefined, options)
+export function ApplicationList({ applications, isLoading }: ApplicationListProps) {
+  if (isLoading) {
+    return (
+      <div className="flex flex-col gap-4">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div key={i} className="animate-pulse h-24 bg-secondary/50 rounded-lg" />
+        ))}
+      </div>
+    )
   }
 
+  if (applications.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center p-8 text-center">
+        <h3 className="text-lg font-semibold mb-2">No applications found</h3>
+        <p className="text-muted-foreground mb-4">Start tracking your job applications!</p>
+        <Button asChild>
+          <Link href="/applications/new">Add Your First Application</Link>
+        </Button>
+      </div>
+    )
+  }
+
+  const getStatusColor = (status: Application['status']) => {
+    switch (status) {
+      case 'Applied':
+        return 'bg-blue-500/20 text-blue-500';
+      case 'Interviewing':
+        return 'bg-yellow-500/20 text-yellow-500';
+      case 'Offer':
+        return 'bg-green-500/20 text-green-500';
+      case 'Rejected':
+        return 'bg-red-500/20 text-red-500';
+      case 'Archived':
+        return 'bg-gray-500/20 text-gray-500';
+      default:
+        return 'bg-blue-500/20 text-blue-500';
+    }
+  };
+
   return (
-    <div className="rounded-md border border-white/10 overflow-hidden">
-      <Table>
-        <TableHeader>
-          <TableRow className="bg-white/5 hover:bg-white/10">
-            <TableHead>Company</TableHead>
-            <TableHead>Position</TableHead>
-            <TableHead className="hidden md:table-cell">Location</TableHead>
-            <TableHead className="hidden md:table-cell">Applied Date</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {applications.map((application) => (
-            <motion.tr
-              key={application.id}
-              className="border-t border-white/10 hover:bg-white/5 transition-colors"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: application.id * 0.05 }}
-              onMouseEnter={() => setHoveredRow(application.id)}
-              onMouseLeave={() => setHoveredRow(null)}
-            >
-              <TableCell className="font-medium">{application.company}</TableCell>
-              <TableCell>{application.position}</TableCell>
-              <TableCell className="hidden md:table-cell">{application.location}</TableCell>
-              <TableCell className="hidden md:table-cell">{formatDate(application.appliedDate)}</TableCell>
-              <TableCell>{getStatusBadge(application.status)}</TableCell>
-              <TableCell className="text-right">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                      <MoreHorizontal className="h-4 w-4" />
-                      <span className="sr-only">Open menu</span>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="glass-card border-white/10">
-                    <DropdownMenuItem className="cursor-pointer">
-                      <Edit className="mr-2 h-4 w-4" />
-                      Edit
-                    </DropdownMenuItem>
-                    <DropdownMenuItem className="cursor-pointer">
-                      <ExternalLink className="mr-2 h-4 w-4" />
-                      View Job
-                    </DropdownMenuItem>
-                    <DropdownMenuItem className="cursor-pointer text-red-500 focus:text-red-500">
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Delete
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </TableCell>
-            </motion.tr>
-          ))}
-        </TableBody>
-      </Table>
+    <div className="flex flex-col gap-4">
+      {applications.map((application) => (
+        <Card key={application.id} className="flex flex-col sm:flex-row p-4 bg-secondary/30 border-none hover:bg-secondary/40 transition-colors">
+          <div className="flex-1">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-2">
+              <h3 className="font-semibold text-lg">{application.company_name}</h3>
+              <Badge className={`${getStatusColor(application.status)} self-start sm:self-auto`}>
+                {application.status}
+              </Badge>
+            </div>
+            <p className="text-muted-foreground mb-2">{application.job_title}</p>
+            <div className="flex items-center text-xs text-muted-foreground">
+              <span>Applied {formatDistanceToNow(new Date(application.application_date), { addSuffix: true })}</span>
+              {application.location && (
+                <>
+                  <span className="mx-2">•</span>
+                  <span>{application.location}</span>
+                </>
+              )}
+            </div>
+          </div>
+          <div className="flex items-center gap-2 mt-4 sm:mt-0">
+            {application.job_url && (
+              <Button variant="outline" size="icon" asChild>
+                <a href={application.job_url} target="_blank" rel="noopener noreferrer">
+                  <ExternalLink className="h-4 w-4" />
+                </a>
+              </Button>
+            )}
+            <Button variant="outline" size="icon" asChild>
+              <Link href={`/applications/${application.id}`}>
+                <MoreHorizontal className="h-4 w-4" />
+              </Link>
+            </Button>
+          </div>
+        </Card>
+      ))}
     </div>
   )
 }
