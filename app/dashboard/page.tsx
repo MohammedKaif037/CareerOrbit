@@ -1,3 +1,8 @@
+'use client';
+
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/lib/auth-context'; // Make sure this provides `user` and `isLoading`
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { PlusCircle, Briefcase, Calendar, CheckCircle, Table2 } from "lucide-react"
@@ -7,6 +12,23 @@ import { StatusSummary } from "@/components/status-summary"
 import { RecentActivity } from "@/components/recent-activity"
 
 export default function Dashboard() {
+  const { user, isLoading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    // Redirect to login if not authenticated
+    if (!isLoading && !user) {
+      router.push('/login');
+    }
+  }, [user, isLoading, router]);
+
+  if (isLoading || !user) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <p>Loading...</p>
+      </div>
+    );
+  }
   return (
     <div className="container mx-auto p-6 space-y-8">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
