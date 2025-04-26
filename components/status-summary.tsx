@@ -26,12 +26,7 @@ export function StatusSummary() {
             labelLine={false}
           >
             {data.map((entry, index) => (
-              <Cell
-                key={`cell-${index}`}
-                fill={entry.color}
-                className="pulsing"
-                style={{ animationDelay: `${index * 0.5}s` }}
-              />
+              <Cell key={`cell-${index}`} fill={entry.color} />
             ))}
           </Pie>
           <Tooltip
