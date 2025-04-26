@@ -32,14 +32,15 @@ export default function LoginPage() {
 
       if (error) {
         setError(error.message)
+        setIsLoading(false)
         return
       }
 
-      router.push("/dashboard")
+      // Use direct navigation instead of router.push
+      window.location.href = "/dashboard"
     } catch (err) {
       setError("An unexpected error occurred")
       console.error(err)
-    } finally {
       setIsLoading(false)
     }
   }
