@@ -1,113 +1,139 @@
-// app/login/page.tsx
-'use client';
+"use client"
 
-import { useState, useEffect } from 'react';
-import { useAuth } from '@/lib/auth-context';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Rocket } from 'lucide-react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import type React from "react"
 
-export default function Login() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
-  const { signIn, isLoading, user } = useAuth();
-  const router = useRouter();
+import { useState } from "react"
+import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { useAuth } from "@/lib/auth-context"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Rocket, AlertCircle, Loader2 } from "lucide-react"
+import { motion } from "framer-motion"
 
-  // Check if user is already logged in and redirect if needed
-  useEffect(() => {
-    if (user) {
-      router.push('/dashboard');
-    }
-  }, [user, router]);
+export default function LoginPage() {
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [error, setError] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const { signIn } = useAuth()
+  const router = useRouter()
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-
-    if (!email || !password) {
-      setError('Please enter both email and password');
-      return;
-    }
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError(null)
+    setIsLoading(true)
 
     try {
-      const { error, user } = await signIn(email, password);
-      
+      const { error } = await signIn(email, password)
+
       if (error) {
-        setError(error.message);
-      } else if (user) {
-        // Explicit redirect after successful login
-        router.push('/dashboard');
+        setError(error.message)
+        return
       }
+
+      router.push("/dashboard")
     } catch (err) {
-      setError('An error occurred during sign in. Please try again.');
-      console.error('Login error:', err);
+      setError("An unexpected error occurred")
+      console.error(err)
+    } finally {
+      setIsLoading(false)
     }
-  };
+  }
 
   return (
-    <div className="container max-w-md mx-auto p-6 space-y-8 flex items-center justify-center min-h-screen">
-      <Card className="glass-card w-full cosmic-glow">
-        <form onSubmit={handleLogin}>
-          <CardHeader>
-            <div className="flex items-center justify-center mb-4">
-              <Rocket size={40} className="text-primary" />
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-background to-background/80 relative p-4">
+      {/* Background stars */}
+      <div className="absolute inset-0 z-0">
+        {Array.from({ length: 100 }).map((_, i) => (
+          <div
+            key={i}
+            className="absolute rounded-full bg-white"
+            style={{
+              width: Math.random() * 2 + 1 + "px",
+              height: Math.random() * 2 + 1 + "px",
+              top: Math.random() * 100 + "%",
+              left: Math.random() * 100 + "%",
+              opacity: Math.random() * 0.5 + 0.2,
+              animation: `twinkle ${Math.random() * 5 + 3}s infinite ${Math.random() * 5}s`,
+            }}
+          />
+        ))}
+      </div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="z-10 w-full max-w-md"
+      >
+        <Card className="glass-card cosmic-glow">
+          <CardHeader className="space-y-1 flex flex-col items-center text-center">
+            <div className="flex items-center justify-center mb-2">
+              <Rocket className="h-8 w-8 text-primary mr-2" />
+              <CardTitle className="text-2xl">Welcome Back</CardTitle>
             </div>
-            <CardTitle className="text-center text-2xl">Launch into Career Orbit</CardTitle>
-            <CardDescription className="text-center">
-              Sign in to your account to track your job applications
-            </CardDescription>
+            <CardDescription>Enter your credentials to access your account</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent>
             {error && (
-              <div className="bg-destructive/10 text-destructive p-3 rounded-md text-sm">
-                {error}
-              </div>
+              <Alert variant="destructive" className="mb-4">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
             )}
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input 
-                id="email" 
-                type="email" 
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="your.email@example.com" 
-                required 
-              />
-            </div>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="password">Password</Label>
-                <Link href="/forgot-password" className="text-sm text-primary hover:underline">
-                  Forgot password?
-                </Link>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="name@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
               </div>
-              <Input 
-                id="password" 
-                type="password" 
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required 
-              />
-            </div>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="password">Password</Label>
+                  <Link href="/forgot-password" className="text-sm text-primary hover:underline">
+                    Forgot password?
+                  </Link>
+                </div>
+                <Input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+              </div>
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Signing in...
+                  </>
+                ) : (
+                  "Sign In"
+                )}
+              </Button>
+            </form>
           </CardContent>
-          <CardFooter className="flex flex-col gap-4">
-            <Button type="submit" disabled={isLoading} className="w-full">
-              {isLoading ? 'Signing In...' : 'Sign In'}
-            </Button>
-            <div className="text-center text-sm">
-              Don't have an account?{' '}
+          <CardFooter className="flex flex-col">
+            <div className="text-sm text-center text-muted-foreground">
+              Don&apos;t have an account?{" "}
               <Link href="/register" className="text-primary hover:underline">
-                Create one
+                Sign up
               </Link>
             </div>
           </CardFooter>
-        </form>
-      </Card>
+        </Card>
+      </motion.div>
     </div>
-  );
+  )
 }
