@@ -55,7 +55,7 @@ export default function RegisterPage() {
         setSuccessMessage("Registration successful! Please check your email to confirm your account.")
         // Wait 3 seconds then redirect to login
         setTimeout(() => {
-          router.push("/login")
+          window.location.href = "/login"
         }, 3000)
       }
     } catch (err) {
