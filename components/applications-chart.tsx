@@ -25,7 +25,7 @@ export function ApplicationsChart() {
             boxShadow: "0 0 10px rgba(56, 189, 248, 0.3)",
           }}
         />
-        <Bar dataKey="value" radius={[4, 4, 0, 0]} className="pulsing" />
+        <Bar dataKey="value" radius={[4, 4, 0, 0]} />
       </BarChart>
     </ResponsiveContainer>
   )
