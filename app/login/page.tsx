@@ -2,10 +2,8 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { useAuth } from "@/lib/auth-context"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -13,36 +11,70 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Rocket, AlertCircle, Loader2 } from "lucide-react"
 import { motion } from "framer-motion"
+import { supabase } from "@/lib/supabase-client"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
-  const { signIn } = useAuth()
-  const router = useRouter()
+  const [isRedirecting, setIsRedirecting] = useState(false)
+
+  // Check if user is already logged in
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data } = await supabase.auth.getSession()
+      if (data.session) {
+        window.location.href = "/dashboard"
+      }
+    }
+
+    checkSession()
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
     setIsLoading(true)
 
+    console.log("Attempting to sign in...")
+
     try {
-      const { error } = await signIn(email, password)
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
 
       if (error) {
+        console.error("Login error:", error)
         setError(error.message)
         setIsLoading(false)
         return
       }
 
-      // Use direct navigation instead of router.push
-      window.location.href = "/dashboard"
+      if (data.session) {
+        console.log("Login successful, redirecting...")
+        setIsRedirecting(true)
+
+        // Force a hard redirect to dashboard
+        window.location.replace("/dashboard")
+      }
     } catch (err) {
+      console.error("Unexpected error:", err)
       setError("An unexpected error occurred")
-      console.error(err)
       setIsLoading(false)
     }
+  }
+
+  if (isRedirecting) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-background to-background/80">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+          <h2 className="text-xl font-semibold">Redirecting to dashboard...</h2>
+        </div>
+      </div>
+    )
   }
 
   return (
