@@ -4,8 +4,6 @@ import type React from "react"
 
 import { useState } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { useAuth } from "@/lib/auth-context"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -13,6 +11,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Rocket, AlertCircle, Loader2 } from "lucide-react"
 import { motion } from "framer-motion"
+import { supabase } from "@/lib/supabase-client"
 
 export default function RegisterPage() {
   const [email, setEmail] = useState("")
@@ -21,8 +20,6 @@ export default function RegisterPage() {
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
-  const { signUp } = useAuth()
-  const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -44,7 +41,14 @@ export default function RegisterPage() {
     setIsLoading(true)
 
     try {
-      const { data, error } = await signUp(email, password)
+      // Configure redirect URL for email confirmation
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+        },
+      })
 
       if (error) {
         setError(error.message)
@@ -53,10 +57,6 @@ export default function RegisterPage() {
 
       if (data) {
         setSuccessMessage("Registration successful! Please check your email to confirm your account.")
-        // Wait 3 seconds then redirect to login
-        setTimeout(() => {
-          window.location.href = "/login"
-        }, 3000)
       }
     } catch (err) {
       setError("An unexpected error occurred")
