@@ -99,6 +99,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         password,
       })
 
+      if (!error && data?.session) {
+        setSession(data.session)
+        setUser(data.session.user)
+        router.refresh()
+      }
+
       return { data, error }
     } catch (error) {
       return { data: null, error }
