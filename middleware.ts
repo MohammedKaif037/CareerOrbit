@@ -14,6 +14,12 @@ export async function middleware(req: NextRequest) {
   const isAuthenticated = !!session
   const isAuthRoute = req.nextUrl.pathname === "/login" || req.nextUrl.pathname === "/register"
   const isRootRoute = req.nextUrl.pathname === "/"
+  const isAuthCallback = req.nextUrl.pathname.startsWith("/auth/callback")
+
+  // Allow auth callback to proceed without redirection
+  if (isAuthCallback) {
+    return res
+  }
 
   // If the user is on an auth route but is already authenticated, redirect to dashboard
   if (isAuthRoute && isAuthenticated) {
@@ -39,5 +45,6 @@ export const config = {
     "/settings/:path*",
     "/login",
     "/register",
+    "/auth/callback",
   ],
 }
