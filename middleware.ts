@@ -1,44 +1,43 @@
-// middleware.ts
-import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs';
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
+import { createMiddlewareClient } from "@supabase/auth-helpers-nextjs"
+import { NextResponse } from "next/server"
+import type { NextRequest } from "next/server"
 
 export async function middleware(req: NextRequest) {
-  const res = NextResponse.next();
-  const supabase = createMiddlewareClient({ req, res });
-  
+  const res = NextResponse.next()
+  const supabase = createMiddlewareClient({ req, res })
+
   const {
     data: { session },
-  } = await supabase.auth.getSession();
+  } = await supabase.auth.getSession()
 
-  // Check auth condition
-  const isLoggedIn = !!session;
-  const isAuthPage = req.nextUrl.pathname.startsWith('/login') || 
-                     req.nextUrl.pathname.startsWith('/register');
-  
-  // If accessing auth pages while logged in, redirect to dashboard
-  if (isAuthPage && isLoggedIn) {
-    return NextResponse.redirect(new URL('/dashboard', req.url));
+  // Check if the user is authenticated
+  const isAuthenticated = !!session
+  const isAuthRoute = req.nextUrl.pathname === "/login" || req.nextUrl.pathname === "/register"
+  const isRootRoute = req.nextUrl.pathname === "/"
+
+  // If the user is on an auth route but is already authenticated, redirect to dashboard
+  if (isAuthRoute && isAuthenticated) {
+    return NextResponse.redirect(new URL("/dashboard", req.url))
   }
-  
-  // If accessing protected pages while logged out, redirect to login
-  if (!isLoggedIn && !isAuthPage && req.nextUrl.pathname !== '/') {
-    return NextResponse.redirect(new URL('/login', req.url));
+
+  // If the user is accessing protected routes but is not authenticated, redirect to login
+  if (!isAuthenticated && !isAuthRoute && !isRootRoute) {
+    return NextResponse.redirect(new URL("/login", req.url))
   }
-  
-  return res;
+
+  return res
 }
 
-// Only run middleware on specific paths
+// Specify the paths that should be protected by the middleware
 export const config = {
   matcher: [
-    '/',
-    '/dashboard',
-    '/applications/:path*',
-    '/interviews/:path*',
-    '/analytics',
-    '/your-applications/:path*',
-    '/login',
-    '/register',
+    "/dashboard/:path*",
+    "/applications/:path*",
+    "/your-applications/:path*",
+    "/interviews/:path*",
+    "/analytics/:path*",
+    "/settings/:path*",
+    "/login",
+    "/register",
   ],
-};
+}
