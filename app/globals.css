@@ -107,9 +107,9 @@
 }
 
 .floating {
-  animation: float 6s ease-in-out infinite;
+  /* animation: float 6s ease-in-out infinite; */
 }
 
 .pulsing {
-  animation: pulse 4s ease-in-out infinite;
+  /* animation: pulse 4s ease-in-out infinite; */
 }
