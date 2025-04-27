@@ -3,7 +3,7 @@ import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 
 export async function middleware(req: NextRequest) {
-  // Don't run middleware on static files or API routes
+  // Skip middleware for static files and API routes
   if (
     req.nextUrl.pathname.startsWith("/_next") ||
     req.nextUrl.pathname.startsWith("/api") ||
@@ -21,21 +21,24 @@ export async function middleware(req: NextRequest) {
 
   // Check if the user is authenticated
   const isAuthenticated = !!session
+
+  // Define routes
   const isAuthRoute = req.nextUrl.pathname === "/login" || req.nextUrl.pathname === "/register"
   const isRootRoute = req.nextUrl.pathname === "/"
   const isAuthCallback = req.nextUrl.pathname.startsWith("/auth/callback")
+  const isDebugRoute = req.nextUrl.pathname === "/debug"
 
-  // Allow auth callback to proceed without redirection
-  if (isAuthCallback) {
+  // Always allow debug and auth callback routes
+  if (isAuthCallback || isDebugRoute) {
     return res
   }
 
-  // If the user is on an auth route but is already authenticated, redirect to dashboard
+  // If user is authenticated and trying to access auth routes, redirect to dashboard
   if (isAuthRoute && isAuthenticated) {
     return NextResponse.redirect(new URL("/dashboard", req.url))
   }
 
-  // If the user is accessing protected routes but is not authenticated, redirect to login
+  // If user is not authenticated and trying to access protected routes, redirect to login
   if (!isAuthenticated && !isAuthRoute && !isRootRoute) {
     return NextResponse.redirect(new URL("/login", req.url))
   }
@@ -43,7 +46,7 @@ export async function middleware(req: NextRequest) {
   return res
 }
 
-// Specify the paths that should be protected by the middleware
+// Only apply middleware to specific paths
 export const config = {
   matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
 }
