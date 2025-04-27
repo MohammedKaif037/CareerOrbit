@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -20,17 +20,7 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [isRedirecting, setIsRedirecting] = useState(false)
 
-  // Check if user is already logged in
-  useEffect(() => {
-    const checkSession = async () => {
-      const { data } = await supabase.auth.getSession()
-      if (data.session) {
-        window.location.href = "/dashboard"
-      }
-    }
-
-    checkSession()
-  }, [])
+  // Remove the useEffect that checks for session - this is causing the loop
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -57,7 +47,7 @@ export default function LoginPage() {
         setIsRedirecting(true)
 
         // Force a hard redirect to dashboard
-        window.location.replace("/dashboard")
+        window.location.href = "/dashboard"
       }
     } catch (err) {
       console.error("Unexpected error:", err)
@@ -169,5 +159,4 @@ export default function LoginPage() {
       </motion.div>
     </div>
   )
-      }
-        
+}
