@@ -58,6 +58,10 @@ export function AppSidebar() {
     },
   ]
 
+  const handleSignOut = () => {
+    signOut().catch(console.error)
+  }
+
   return (
     <Sidebar>
       <SidebarHeader className="flex items-center justify-center py-6">
@@ -85,7 +89,7 @@ export function AppSidebar() {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton asChild>
-              <button className="w-full" onClick={() => signOut()}>
+              <button className="w-full" onClick={handleSignOut}>
                 <LogOut className="h-5 w-5" />
                 <span>Logout</span>
               </button>
