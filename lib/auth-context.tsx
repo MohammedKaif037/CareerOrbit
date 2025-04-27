@@ -3,26 +3,11 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react"
 import type { Session, User } from "@supabase/supabase-js"
 import { supabase } from "@/lib/supabase-client"
-import { useRouter } from "next/navigation"
 
 type AuthContextType = {
   user: User | null
   session: Session | null
   isLoading: boolean
-  signUp: (
-    email: string,
-    password: string,
-  ) => Promise<{
-    error: any | null
-    data: any | null
-  }>
-  signIn: (
-    email: string,
-    password: string,
-  ) => Promise<{
-    error: any | null
-    data: any | null
-  }>
   signOut: () => Promise<void>
 }
 
@@ -32,7 +17,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [session, setSession] = useState<Session | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const router = useRouter()
 
   useEffect(() => {
     // Check active session
@@ -46,7 +30,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } = await supabase.auth.getSession()
 
         if (error) {
-          throw error
+          console.error("Error getting session:", error)
         }
 
         setSession(session)
@@ -64,65 +48,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
+      console.log("Auth state changed:", _event)
       setSession(session)
       setUser(session?.user ?? null)
       setIsLoading(false)
-
-      // Force refresh the page to update server components
-      if (_event === "SIGNED_IN" || _event === "TOKEN_REFRESHED") {
-        router.refresh()
-      }
     })
 
     return () => {
       subscription.unsubscribe()
     }
-  }, [router])
-
-  const signUp = async (email: string, password: string) => {
-    try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-      })
-
-      return { data, error }
-    } catch (error) {
-      return { data: null, error }
-    }
-  }
-
-  const signIn = async (email: string, password: string) => {
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      })
-
-      if (!error && data?.session) {
-        setSession(data.session)
-        setUser(data.session.user)
-        router.refresh()
-      }
-
-      return { data, error }
-    } catch (error) {
-      return { data: null, error }
-    }
-  }
+  }, [])
 
   const signOut = async () => {
     await supabase.auth.signOut()
-    router.push("/login")
-    router.refresh()
+    window.location.href = "/login"
   }
 
   const value = {
     user,
     session,
     isLoading,
-    signUp,
-    signIn,
     signOut,
   }
 
