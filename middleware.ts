@@ -3,6 +3,15 @@ import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 
 export async function middleware(req: NextRequest) {
+  // Don't run middleware on static files or API routes
+  if (
+    req.nextUrl.pathname.startsWith("/_next") ||
+    req.nextUrl.pathname.startsWith("/api") ||
+    req.nextUrl.pathname.includes(".")
+  ) {
+    return NextResponse.next()
+  }
+
   const res = NextResponse.next()
   const supabase = createMiddlewareClient({ req, res })
 
@@ -36,15 +45,5 @@ export async function middleware(req: NextRequest) {
 
 // Specify the paths that should be protected by the middleware
 export const config = {
-  matcher: [
-    "/dashboard/:path*",
-    "/applications/:path*",
-    "/your-applications/:path*",
-    "/interviews/:path*",
-    "/analytics/:path*",
-    "/settings/:path*",
-    "/login",
-    "/register",
-    "/auth/callback",
-  ],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
 }
