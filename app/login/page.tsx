@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2, AlertCircle, Rocket } from "lucide-react";
+import { Loader2, AlertCircle } from "lucide-react";
 import { supabase } from "@/lib/supabase-client";
 
 function LoginPage() {
@@ -79,11 +79,8 @@ function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-muted/50 px-4 py-12">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1 text-center">
-          <div className="flex justify-center mb-2">
-            <Rocket className="h-8 w-8 text-primary mr-2" />
-          </div>
           <CardTitle className="text-2xl font-bold">Welcome Back</CardTitle>
-          <CardDescription>Enter your credentials to access your account</CardDescription>
+          <CardDescription>Enter your credentials to continue</CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
@@ -129,7 +126,7 @@ function LoginPage() {
             </Button>
             <div className="text-center text-sm">
               Don't have an account?{" "}
-              <Link href="/register" className="text-primary underline hover:underline-offset-2">
+              <Link href="/register" className="text-primary hover:underline underline-offset-2">
                 Sign up
               </Link>
             </div>
