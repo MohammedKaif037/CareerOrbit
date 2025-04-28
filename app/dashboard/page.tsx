@@ -1,43 +1,70 @@
-'use client';
+"use client"
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/lib/auth-context';
+import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { PlusCircle, Briefcase, Calendar, CheckCircle, Table2 } from "lucide-react"
+import { PlusCircle, Briefcase, Calendar, CheckCircle, Table2, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { ApplicationsGalaxy } from "@/components/applications-galaxy"
 import { StatusSummary } from "@/components/status-summary"
 import { RecentActivity } from "@/components/recent-activity"
+import { supabase } from "@/lib/supabase-client"
 
 export default function Dashboard() {
-  const { user, isLoading } = useAuth();
-  const router = useRouter();
-  const [isRedirecting, setIsRedirecting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true)
+  const [stats, setStats] = useState({
+    total: 0,
+    interviews: 0,
+    offers: 0,
+  })
+  const [user, setUser] = useState<any>(null)
 
   useEffect(() => {
-    // Only attempt to redirect once
-    if (!isLoading && user === null && !isRedirecting) {
-      setIsRedirecting(true);
-      router.push('/login');
+    async function checkAuthAndLoadData() {
+      try {
+        // Check if user is authenticated
+        const { data: userData } = await supabase.auth.getUser()
+
+        if (!userData.user) {
+          // If not authenticated, redirect to login
+          window.location.href = "/login"
+          return
+        }
+
+        setUser(userData.user)
+
+        // Get application stats
+        const { data: statsData, error: statsError } = await supabase.rpc("get_application_stats", {
+          user_id: userData.user.id,
+        })
+
+        if (statsData && !statsError) {
+          setStats({
+            total: statsData.total || 0,
+            interviews: statsData.interviewing || 0,
+            offers: statsData.offer || 0,
+          })
+        }
+      } catch (error) {
+        console.error("Error loading dashboard:", error)
+      } finally {
+        setIsLoading(false)
+      }
     }
-  }, [user, isLoading, router, isRedirecting]);
+
+    checkAuthAndLoadData()
+  }, [])
 
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
-        <p>Loading...</p>
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4 text-primary" />
+          <h2 className="text-2xl font-semibold">Loading your dashboard...</h2>
+          <p className="text-muted-foreground mt-2">Preparing your cosmic journey</p>
+        </div>
       </div>
-    );
-  }
-
-  if (!user) {
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <p>Redirecting to login...</p>
-      </div>
-    );
+    )
   }
 
   return (
@@ -73,7 +100,7 @@ export default function Dashboard() {
             <CardDescription>Your cosmic journey so far</CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-4xl font-bold">42</p>
+            <p className="text-4xl font-bold">{stats.total}</p>
           </CardContent>
         </Card>
         <Card className="glass-card cosmic-glow-yellow">
@@ -85,7 +112,7 @@ export default function Dashboard() {
             <CardDescription>Your next missions</CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-4xl font-bold">3</p>
+            <p className="text-4xl font-bold">{stats.interviews}</p>
           </CardContent>
         </Card>
         <Card className="glass-card cosmic-glow-green">
@@ -97,7 +124,7 @@ export default function Dashboard() {
             <CardDescription>Successful landings</CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-4xl font-bold">2</p>
+            <p className="text-4xl font-bold">{stats.offers}</p>
           </CardContent>
         </Card>
       </div>
@@ -137,4 +164,4 @@ export default function Dashboard() {
       </div>
     </div>
   )
-}
+              }
