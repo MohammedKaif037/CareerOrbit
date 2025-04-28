@@ -21,6 +21,6 @@ export async function GET(request: NextRequest) {
     // Continue to redirect even if there's an error
   }
 
-  // Always redirect to the dashboard
-  return NextResponse.redirect(new URL("/dashboard", request.url))
+  // Redirect to the dashboard
+  return NextResponse.redirect(new URL("/protected/dashboard", request.url))
 }
