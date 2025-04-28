@@ -1,4 +1,3 @@
-//applications/page.tsx
 'use client';
 
 export const dynamic = "force-dynamic";
@@ -14,23 +13,31 @@ import { getApplications, Application } from "@/lib/supabase-client"
 import { useAuth } from '@/lib/auth-context';
 
 export default function Applications() {
+  const { user } = useAuth();
   const [applications, setApplications] = useState<Application[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const { user } = useAuth();
 
   useEffect(() => {
     const fetchApplications = async () => {
-      if (user) {
-        setIsLoading(true);
-        const data = await getApplications();
-        setApplications(data);
-        setIsLoading(false);
-      }
+      if (!user) return;  // <--- user might be undefined early
+      
+      setIsLoading(true);
+      const data = await getApplications();
+      setApplications(data);
+      setIsLoading(false);
     };
 
     fetchApplications();
   }, [user]);
+
+  if (!user) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <p>Loading user...</p>
+      </div>
+    );
+  }
 
   const filteredApplications = applications.filter((app) => 
     app.company_name.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -80,4 +87,4 @@ export default function Applications() {
       </Card>
     </div>
   )
-            }
+}
