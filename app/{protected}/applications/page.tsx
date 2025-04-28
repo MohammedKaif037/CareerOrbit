@@ -20,8 +20,7 @@ export default function Applications() {
 
   useEffect(() => {
     const fetchApplications = async () => {
-      if (!user) return;  // <--- user might be undefined early
-      
+      if (!user) return; // <--- only fetch if user is available
       setIsLoading(true);
       const data = await getApplications();
       setApplications(data);
@@ -32,6 +31,7 @@ export default function Applications() {
   }, [user]);
 
   if (!user) {
+    // <--- Add this safe check
     return (
       <div className="flex justify-center items-center min-h-screen">
         <p>Loading user...</p>
@@ -39,8 +39,8 @@ export default function Applications() {
     );
   }
 
-  const filteredApplications = applications.filter((app) => 
-    app.company_name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+  const filteredApplications = applications.filter((app) =>
+    app.company_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     app.job_title.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -67,9 +67,9 @@ export default function Applications() {
           <div className="flex flex-col sm:flex-row gap-4 mt-4">
             <div className="relative flex-1">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input 
-                type="search" 
-                placeholder="Search applications..." 
+              <Input
+                type="search"
+                placeholder="Search applications..."
                 className="pl-8 bg-background/50"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
