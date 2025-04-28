@@ -25,24 +25,28 @@ export default function LoginPage() {
     setIsLoading(true)
 
     try {
-      // Sign in with Supabase
+      console.log("Attempting to sign in with:", email)
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
 
       if (error) {
+        console.error("Login error:", error)
         setError(error.message)
         setIsLoading(false)
         return
       }
 
       if (data.session) {
+        console.log("Login successful, redirecting...")
         setIsRedirecting(true)
-        // Use a simple redirect
-        window.location.href = "/dashboard"
+
+        // Force a hard redirect to dashboard
+        window.location.href = "/protected/dashboard"
       }
     } catch (err: any) {
+      console.error("Unexpected error:", err)
       setError(err.message || "An unexpected error occurred")
       setIsLoading(false)
     }
