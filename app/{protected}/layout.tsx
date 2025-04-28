@@ -1,56 +1,52 @@
-"use client"
+'use client';
 
-import type React from "react"
-import { useEffect, useState } from "react"
-import { AppSidebar } from "@/components/app-sidebar"
-import { SidebarProvider } from "@/components/ui/sidebar"
-import { supabase } from "@/lib/supabase-client"
-import { Loader2 } from "lucide-react"
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { AppSidebar } from "@/components/app-sidebar";
+import { SidebarProvider } from "@/components/ui/sidebar";
+import { supabase } from "@/lib/supabase-client";
+import { Loader2 } from "lucide-react";
 
-export default function ProtectedLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode
-}>) {
-  const [isLoading, setIsLoading] = useState(true)
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
+export default function ProtectedLayout({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
+  const [isChecking, setIsChecking] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
-    async function checkAuth() {
+    const checkAuth = async () => {
       try {
-        const { data } = await supabase.auth.getSession()
+        const { data: { session } } = await supabase.auth.getSession();
 
-        if (!data.session) {
-          console.log("No session found, redirecting to login")
-          window.location.href = "/login"
-          return
+        if (!session) {
+          console.log("No session found, redirecting to login");
+          router.replace(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
+        } else {
+          setIsAuthenticated(true);
         }
-
-        setIsAuthenticated(true)
       } catch (error) {
-        console.error("Auth check error:", error)
-        window.location.href = "/login"
+        console.error("Auth check error:", error);
+        router.replace("/login");
       } finally {
-        setIsLoading(false)
+        setIsChecking(false);
       }
-    }
+    };
 
-    checkAuth()
-  }, [])
+    checkAuth();
+  }, [router]);
 
-  if (isLoading) {
+  if (isChecking) {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="text-center">
           <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4 text-primary" />
-          <h2 className="text-2xl font-semibold">Loading...</h2>
+          <h2 className="text-2xl font-semibold">Checking authentication...</h2>
         </div>
       </div>
-    )
+    );
   }
 
   if (!isAuthenticated) {
-    return null // Will redirect in the useEffect
+    return null; // while redirecting
   }
 
   return (
@@ -65,7 +61,7 @@ export default function ProtectedLayout({
         </main>
       </div>
     </SidebarProvider>
-  )
+  );
 }
 
 function StarField() {
@@ -85,5 +81,5 @@ function StarField() {
         />
       ))}
     </div>
-  )
+  );
 }
