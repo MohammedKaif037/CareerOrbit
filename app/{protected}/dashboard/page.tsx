@@ -1,44 +1,58 @@
+"use client"
+
+import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { PlusCircle, Briefcase, Calendar, CheckCircle, Table2 } from "lucide-react"
+import { PlusCircle, Briefcase, Calendar, CheckCircle, Table2, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { ApplicationsGalaxy } from "@/components/applications-galaxy"
 import { StatusSummary } from "@/components/status-summary"
 import { RecentActivity } from "@/components/recent-activity"
-import { createServerComponentClient } from "@supabase/auth-helpers-nextjs"
-import { cookies } from "next/headers"
+import { supabase } from "@/lib/supabase-client"
 
-export default async function Dashboard() {
-  const supabase = createServerComponentClient({ cookies })
-
-  // Get user stats
-  let stats = {
+export default function Dashboard() {
+  const [isLoading, setIsLoading] = useState(true)
+  const [stats, setStats] = useState({
     total: 0,
     interviews: 0,
     offers: 0,
-  }
+  })
 
-  try {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
+  useEffect(() => {
+    async function loadStats() {
+      try {
+        const { data: userData } = await supabase.auth.getUser()
 
-    if (user) {
-      // Get application stats
-      const { data: statsData, error: statsError } = await supabase.rpc("get_application_stats", {
-        user_id: user.id,
-      })
+        if (userData.user) {
+          // Get application stats
+          const { data: statsData, error: statsError } = await supabase.rpc("get_application_stats", {
+            user_id: userData.user.id,
+          })
 
-      if (statsData && !statsError) {
-        stats = {
-          total: statsData.total || 0,
-          interviews: statsData.interviewing || 0,
-          offers: statsData.offer || 0,
+          if (statsData && !statsError) {
+            setStats({
+              total: statsData.total || 0,
+              interviews: statsData.interviewing || 0,
+              offers: statsData.offer || 0,
+            })
+          }
         }
+      } catch (error) {
+        console.error("Error loading stats:", error)
+      } finally {
+        setIsLoading(false)
       }
     }
-  } catch (error) {
-    console.error("Error fetching stats:", error)
+
+    loadStats()
+  }, [])
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    )
   }
 
   return (
@@ -50,13 +64,13 @@ export default async function Dashboard() {
         </div>
         <div className="flex gap-2">
           <Button variant="outline" asChild className="gap-2">
-            <Link href="/your-applications">
+            <Link href="/protected/your-applications">
               <Table2 className="h-5 w-5" />
               View Spreadsheet
             </Link>
           </Button>
           <Button asChild size="lg" className="gap-2">
-            <Link href="/applications/new">
+            <Link href="/protected/applications/new">
               <PlusCircle className="h-5 w-5" />
               Launch New Application
             </Link>
