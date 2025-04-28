@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/lib/auth-context'; // Make sure this provides `user` and `isLoading`
+import { useAuth } from '@/lib/auth-context';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { PlusCircle, Briefcase, Calendar, CheckCircle, Table2 } from "lucide-react"
@@ -14,26 +14,32 @@ import { RecentActivity } from "@/components/recent-activity"
 export default function Dashboard() {
   const { user, isLoading } = useAuth();
   const router = useRouter();
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
-useEffect(() => {
-  if (!isLoading && user === null) {
-    // If auth is not ready and user is null, delay a bit before redirect
-    const timeout = setTimeout(() => {
+  useEffect(() => {
+    // Only attempt to redirect once
+    if (!isLoading && user === null && !isRedirecting) {
+      setIsRedirecting(true);
       router.push('/login');
-    }, 1000); // wait 1 second
+    }
+  }, [user, isLoading, router, isRedirecting]);
 
-    return () => clearTimeout(timeout);
-  }
-}, [user, isLoading, router]);
-
-
-  if (isLoading || !user) {
+  if (isLoading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
         <p>Loading...</p>
       </div>
     );
   }
+
+  if (!user) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <p>Redirecting to login...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto p-6 space-y-8">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
