@@ -10,7 +10,6 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Rocket, AlertCircle, Loader2 } from "lucide-react"
-import { motion } from "framer-motion"
 import { supabase } from "@/lib/supabase-client"
 
 export default function RegisterPage() {
@@ -58,9 +57,8 @@ export default function RegisterPage() {
       if (data) {
         setSuccessMessage("Registration successful! Please check your email to confirm your account.")
       }
-    } catch (err) {
-      setError("An unexpected error occurred")
-      console.error(err)
+    } catch (err: any) {
+      setError(err.message || "An unexpected error occurred")
     } finally {
       setIsLoading(false)
     }
@@ -80,18 +78,12 @@ export default function RegisterPage() {
               top: Math.random() * 100 + "%",
               left: Math.random() * 100 + "%",
               opacity: Math.random() * 0.5 + 0.2,
-              animation: `twinkle ${Math.random() * 5 + 3}s infinite ${Math.random() * 5}s`,
             }}
           />
         ))}
       </div>
 
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="z-10 w-full max-w-md"
-      >
+      <div className="z-10 w-full max-w-md">
         <Card className="glass-card cosmic-glow">
           <CardHeader className="space-y-1 flex flex-col items-center text-center">
             <div className="flex items-center justify-center mb-2">
@@ -168,7 +160,7 @@ export default function RegisterPage() {
             </div>
           </CardFooter>
         </Card>
-      </motion.div>
+      </div>
     </div>
   )
 }
