@@ -1,12 +1,58 @@
+"use client"
+
 import type React from "react"
+import { useEffect, useState } from "react"
 import { AppSidebar } from "@/components/app-sidebar"
 import { SidebarProvider } from "@/components/ui/sidebar"
+import { supabase } from "@/lib/supabase-client"
+import { Loader2 } from "lucide-react"
 
 export default function ProtectedLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  const [isLoading, setIsLoading] = useState(true)
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+
+  useEffect(() => {
+    async function checkAuth() {
+      try {
+        const { data } = await supabase.auth.getSession()
+
+        if (!data.session) {
+          console.log("No session found, redirecting to login")
+          window.location.href = "/login"
+          return
+        }
+
+        setIsAuthenticated(true)
+      } catch (error) {
+        console.error("Auth check error:", error)
+        window.location.href = "/login"
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    checkAuth()
+  }, [])
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4 text-primary" />
+          <h2 className="text-2xl font-semibold">Loading...</h2>
+        </div>
+      </div>
+    )
+  }
+
+  if (!isAuthenticated) {
+    return null // Will redirect in the useEffect
+  }
+
   return (
     <SidebarProvider>
       <div className="flex min-h-screen">
@@ -35,7 +81,6 @@ function StarField() {
             top: Math.random() * 100 + "%",
             left: Math.random() * 100 + "%",
             opacity: Math.random() * 0.5 + 0.2,
-            animation: `twinkle ${Math.random() * 5 + 3}s infinite ${Math.random() * 5}s`,
           }}
         />
       ))}
