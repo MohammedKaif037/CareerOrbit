@@ -1,6 +1,3 @@
-'use client';
-export const dynamic = "force-dynamic";
-
 import type React from "react"
 import { AppSidebar } from "@/components/app-sidebar"
 import { SidebarProvider } from "@/components/ui/sidebar"
