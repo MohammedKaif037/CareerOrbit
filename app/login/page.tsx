@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -10,7 +10,6 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Rocket, AlertCircle, Loader2 } from "lucide-react"
-import { motion } from "framer-motion"
 import { supabase } from "@/lib/supabase-client"
 
 export default function LoginPage() {
@@ -20,48 +19,31 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [isRedirecting, setIsRedirecting] = useState(false)
 
-  // Check if user is already logged in
-  useEffect(() => {
-    const checkSession = async () => {
-      const { data } = await supabase.auth.getSession()
-      if (data.session) {
-        window.location.href = "/dashboard"
-      }
-    }
-
-    checkSession()
-  }, [])
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
     setIsLoading(true)
 
-    console.log("Attempting to sign in...")
-
     try {
+      // Sign in with Supabase
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
 
       if (error) {
-        console.error("Login error:", error)
         setError(error.message)
         setIsLoading(false)
         return
       }
 
       if (data.session) {
-        console.log("Login successful, redirecting...")
         setIsRedirecting(true)
-
-        // Force a hard redirect to dashboard
-        window.location.replace("/dashboard")
+        // Use a simple redirect
+        window.location.href = "/dashboard"
       }
-    } catch (err) {
-      console.error("Unexpected error:", err)
-      setError("An unexpected error occurred")
+    } catch (err: any) {
+      setError(err.message || "An unexpected error occurred")
       setIsLoading(false)
     }
   }
@@ -91,18 +73,12 @@ export default function LoginPage() {
               top: Math.random() * 100 + "%",
               left: Math.random() * 100 + "%",
               opacity: Math.random() * 0.5 + 0.2,
-              animation: `twinkle ${Math.random() * 5 + 3}s infinite ${Math.random() * 5}s`,
             }}
           />
         ))}
       </div>
 
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="z-10 w-full max-w-md"
-      >
+      <div className="z-10 w-full max-w-md">
         <Card className="glass-card cosmic-glow">
           <CardHeader className="space-y-1 flex flex-col items-center text-center">
             <div className="flex items-center justify-center mb-2">
@@ -166,7 +142,7 @@ export default function LoginPage() {
             </div>
           </CardFooter>
         </Card>
-      </motion.div>
+      </div>
     </div>
   )
 }
