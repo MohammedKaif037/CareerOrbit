@@ -10,12 +10,17 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL("/login", request.url))
   }
 
-  const cookieStore = cookies()
-  const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
+  try {
+    const cookieStore = cookies()
+    const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
 
-  // Exchange the code for a session
-  await supabase.auth.exchangeCodeForSession(code)
+    // Exchange the code for a session
+    await supabase.auth.exchangeCodeForSession(code)
+  } catch (error) {
+    console.error("Error in auth callback:", error)
+    // Continue to redirect even if there's an error
+  }
 
-  // Redirect to the dashboard
+  // Always redirect to the dashboard
   return NextResponse.redirect(new URL("/dashboard", request.url))
 }
