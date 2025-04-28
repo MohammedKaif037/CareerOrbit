@@ -3,7 +3,8 @@
 import { BarChart3, Home, ListChecks, PlusCircle, Calendar, Settings, LogOut, Rocket, Table2 } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { useAuth } from "@/lib/auth-context"
+import { supabase } from "@/lib/supabase-client"
+import { useState, useEffect } from "react"
 
 import {
   Sidebar,
@@ -18,7 +19,16 @@ import {
 
 export function AppSidebar() {
   const pathname = usePathname()
-  const { signOut, user } = useAuth()
+  const [user, setUser] = useState<any>(null)
+
+  useEffect(() => {
+    async function getUser() {
+      const { data } = await supabase.auth.getUser()
+      setUser(data.user)
+    }
+
+    getUser()
+  }, [])
 
   const menuItems = [
     {
@@ -58,8 +68,9 @@ export function AppSidebar() {
     },
   ]
 
-  const handleSignOut = () => {
-    signOut().catch(console.error)
+  const handleSignOut = async () => {
+    await supabase.auth.signOut()
+    window.location.href = "/login"
   }
 
   return (
