@@ -15,12 +15,17 @@ export default function Dashboard() {
   const { user, isLoading } = useAuth();
   const router = useRouter();
 
-  useEffect(() => {
-    // Redirect to login if not authenticated
-    if (!isLoading && user === null) {
+useEffect(() => {
+  if (!isLoading && user === null) {
+    // If auth is not ready and user is null, delay a bit before redirect
+    const timeout = setTimeout(() => {
       router.push('/login');
-    }
-  }, [user, isLoading, router]);
+    }, 1000); // wait 1 second
+
+    return () => clearTimeout(timeout);
+  }
+}, [user, isLoading, router]);
+
 
   if (isLoading || !user) {
     return (
