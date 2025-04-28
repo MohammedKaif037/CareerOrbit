@@ -3,8 +3,8 @@
 import { BarChart3, Home, ListChecks, PlusCircle, Calendar, Settings, LogOut, Rocket, Table2 } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { supabase } from "@/lib/supabase-client"
 import { useState, useEffect } from "react"
+import { supabase } from "@/lib/supabase-client"
 
 import {
   Sidebar,
@@ -34,49 +34,53 @@ export function AppSidebar() {
     {
       title: "Dashboard",
       icon: Home,
-      href: "/dashboard",
+      href: "/protected/dashboard",
     },
     {
       title: "Applications",
       icon: ListChecks,
-      href: "/applications",
+      href: "/protected/applications",
     },
     {
       title: "Your Applications",
       icon: Table2,
-      href: "/your-applications",
+      href: "/protected/your-applications",
     },
     {
       title: "Add Application",
       icon: PlusCircle,
-      href: "/applications/new",
+      href: "/protected/applications/new",
     },
     {
       title: "Interviews",
       icon: Calendar,
-      href: "/interviews",
+      href: "/protected/interviews",
     },
     {
       title: "Analytics",
       icon: BarChart3,
-      href: "/analytics",
+      href: "/protected/analytics",
     },
     {
       title: "Settings",
       icon: Settings,
-      href: "/settings",
+      href: "/protected/settings",
     },
   ]
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut()
-    window.location.href = "/login"
+    try {
+      await supabase.auth.signOut()
+      window.location.href = "/login"
+    } catch (error) {
+      console.error("Sign out error:", error)
+    }
   }
 
   return (
     <Sidebar>
       <SidebarHeader className="flex items-center justify-center py-6">
-        <Link href="/dashboard" className="flex items-center gap-2">
+        <Link href="/protected/dashboard" className="flex items-center gap-2">
           <Rocket className="h-6 w-6 text-primary" />
           <span className="text-xl font-bold">Career Orbit</span>
         </Link>
