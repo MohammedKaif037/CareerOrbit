@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -137,5 +137,13 @@ export default function LoginPage() {
         </form>
       </Card>
     </div>
+  );
+}
+
+export default function LoginPageWrapper() {
+  return (
+    <Suspense fallback={<div>Loading login page...</div>}>
+      <LoginPage />
+    </Suspense>
   );
 }
