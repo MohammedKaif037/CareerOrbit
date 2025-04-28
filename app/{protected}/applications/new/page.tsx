@@ -1,8 +1,7 @@
-"use client"
+'use client';
 
 export const dynamic = "force-dynamic";
 
-import type React from "react"
 import { useState } from "react"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -10,83 +9,98 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Rocket, ArrowLeft, Loader2 } from "lucide-react"
+import { Rocket, ArrowLeft, Paperclip, FileText } from "lucide-react"
 import Link from "next/link"
 import { motion } from "framer-motion"
-import { useRouter } from "next/navigation"
-import { supabase } from "@/lib/supabase-client"
 import { useAuth } from "@/lib/auth-context"
-import { Alert, AlertDescription } from "@/components/ui/alert"
+import { createApplication } from "@/lib/supabase-client"
+import { useRouter } from "next/navigation"
+import { Checkbox } from "@/components/ui/checkbox"
 
 export default function NewApplication() {
-  const [formStep, setFormStep] = useState(0)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const router = useRouter()
-  const { user } = useAuth()
+  const { user } = useAuth();
+  const router = useRouter();
 
-  // Form state
+  const [formStep, setFormStep] = useState(0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const [formData, setFormData] = useState({
-    company_name: "",
-    job_title: "",
-    location: "",
-    job_url: "",
-    application_date: new Date().toISOString().split("T")[0],
-    status: "Applied",
+    company_name: '',
+    job_title: '',
+    location: '',
+    job_url: '',
+    application_date: new Date().toISOString().split('T')[0],
+    status: 'Applied',
+    notes: '',
+    salary_range: '',
     resume_sent: false,
     cover_letter_sent: false,
-    notes: "",
-    application_method: "Company Website",
-    priority: 3,
-  })
+    application_method: 'Website',
+    contact_name: '',
+    contact_email: '',
+    follow_up_date: '',
+  });
+
+  if (!user) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <p>Loading user...</p>
+      </div>
+    );
+  }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { id, value, type } = e.target
-    setFormData({
-      ...formData,
-      [id]: type === "checkbox" ? (e.target as HTMLInputElement).checked : value,
-    })
-  }
+    const { id, value } = e.target;
+    setFormData(prev => ({ ...prev, [id]: value }));
+  };
 
   const handleSelectChange = (id: string, value: string) => {
-    setFormData({
-      ...formData,
-      [id]: value,
-    })
-  }
+    setFormData(prev => ({ ...prev, [id]: value }));
+  };
 
-  const nextStep = () => setFormStep((prev) => prev + 1)
-  const prevStep = () => setFormStep((prev) => prev - 1)
+  const handleCheckboxChange = (id: string, checked: boolean) => {
+    setFormData(prev => ({ ...prev, [id]: checked }));
+  };
+
+  const nextStep = () => setFormStep(prev => prev + 1);
+  const prevStep = () => setFormStep(prev => prev - 1);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsSubmitting(true)
-    setError(null)
+    e.preventDefault();
+    if (!user) {
+      alert('You must be logged in to create an application');
+      return;
+    }
+
+    setIsSubmitting(true);
 
     try {
-      if (!user) {
-        throw new Error("You must be logged in to submit an application")
-      }
-
-      // Submit to Supabase
-      const { data, error } = await supabase.from("applications").insert({
+      const applicationData = {
         ...formData,
         user_id: user.id,
-      })
+        application_date: new Date(formData.application_date).toISOString(),
+        follow_up_date: formData.follow_up_date
+          ? new Date(formData.follow_up_date).toISOString()
+          : null,
+        follow_up_required: false,
+        interview_scheduled: false,
+      };
 
-      if (error) {
-        throw error
+      const result = await createApplication(applicationData);
+
+      if (result) {
+        router.push('/applications');
+      } else {
+        throw new Error('Failed to create application');
       }
-
-      // Redirect to applications page
-      router.push("/applications")
-      router.refresh()
-    } catch (err: any) {
-      console.error("Error submitting application:", err)
-      setError(err.message || "Failed to submit application")
-      setIsSubmitting(false)
+    } catch (error) {
+      console.error('Error creating application:', error);
+      alert('Failed to create application. Please try again.');
+    } finally {
+      setIsSubmitting(false);
     }
-  }
+  };
+
 
   return (
     <div className="container max-w-3xl mx-auto p-6 space-y-8">
