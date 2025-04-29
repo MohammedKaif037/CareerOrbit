@@ -39,73 +39,104 @@ export type Application = {
   updated_at?: string;
 };
 
+// Error handling type
+export type SupabaseResponse<T> = {
+  data: T | null;
+  error: string | null;
+};
+
 // Authentication functions
-export async function signUp(email: string, password: string) {
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      emailRedirectTo: `${window.location.origin}/auth/callback`,
-    },
-  });
-  
-  if (error) {
-    console.error('Error signing up:', error);
-    throw error;
+export async function signUp(email: string, password: string): Promise<SupabaseResponse<any>> {
+  try {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
+    
+    if (error) {
+      console.error('Error signing up:', error);
+      return { data: null, error: error.message };
+    }
+    
+    return { data, error: null };
+  } catch (err: any) {
+    console.error('Exception signing up:', err);
+    return { data: null, error: err.message || 'An unexpected error occurred during sign up' };
   }
-  
-  return data;
 }
 
-export async function signIn(email: string, password: string) {
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  });
-  
-  if (error) {
-    console.error('Error signing in:', error);
-    throw error;
+export async function signIn(email: string, password: string): Promise<SupabaseResponse<any>> {
+  try {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    
+    if (error) {
+      console.error('Error signing in:', error);
+      return { data: null, error: error.message };
+    }
+    
+    return { data, error: null };
+  } catch (err: any) {
+    console.error('Exception signing in:', err);
+    return { data: null, error: err.message || 'An unexpected error occurred during sign in' };
   }
-  
-  return data;
 }
 
-export async function signOut() {
-  const { error } = await supabase.auth.signOut();
-  
-  if (error) {
-    console.error('Error signing out:', error);
-    throw error;
+export async function signOut(): Promise<SupabaseResponse<boolean>> {
+  try {
+    const { error } = await supabase.auth.signOut();
+    
+    if (error) {
+      console.error('Error signing out:', error);
+      return { data: null, error: error.message };
+    }
+    
+    return { data: true, error: null };
+  } catch (err: any) {
+    console.error('Exception signing out:', err);
+    return { data: null, error: err.message || 'An unexpected error occurred during sign out' };
   }
-  
-  return true;
 }
 
-export async function getSession() {
-  const { data, error } = await supabase.auth.getSession();
-  
-  if (error) {
-    console.error('Error getting session:', error);
-    throw error;
+export async function getSession(): Promise<SupabaseResponse<any>> {
+  try {
+    const { data, error } = await supabase.auth.getSession();
+    
+    if (error) {
+      console.error('Error getting session:', error);
+      return { data: null, error: error.message };
+    }
+    
+    return { data, error: null };
+  } catch (err: any) {
+    console.error('Exception getting session:', err);
+    return { data: null, error: err.message || 'An unexpected error occurred while retrieving session' };
   }
-  
-  return data;
 }
 
-export async function getUser() {
-  const { data, error } = await supabase.auth.getUser();
-  
-  if (error) {
-    console.error('Error getting user:', error);
-    throw error;
+export async function getUser(): Promise<SupabaseResponse<any>> {
+  try {
+    const { data, error } = await supabase.auth.getUser();
+    
+    if (error) {
+      console.error('Error getting user:', error);
+      return { data: null, error: error.message };
+    }
+    
+    return { data: data.user, error: null };
+  } catch (err: any) {
+    console.error('Exception getting user:', err);
+    return { data: null, error: err.message || 'An unexpected error occurred while retrieving user' };
   }
-  
-  return data.user;
 }
 
 // Application CRUD operations
-export async function createApplication(application: Omit<Application, 'id' | 'created_at' | 'updated_at'>) {
+export async function createApplication(application: Omit<Application, 'id' | 'created_at' | 'updated_at'>): Promise<SupabaseResponse<Application>> {
   console.log('Creating application:', application);
   
   try {
@@ -117,75 +148,95 @@ export async function createApplication(application: Omit<Application, 'id' | 'c
     
     if (error) {
       console.error('Error creating application:', error);
-      throw error;
+      return { data: null, error: error.message };
     }
     
     console.log('Application created successfully:', data);
-    return data;
-  } catch (error) {
-    console.error('Exception creating application:', error);
-    throw error;
+    return { data, error: null };
+  } catch (err: any) {
+    console.error('Exception creating application:', err);
+    return { data: null, error: err.message || 'An unexpected error occurred while creating the application' };
   }
 }
 
-export async function getApplications(userId: string) {
-  const { data, error } = await supabase
-    .from('applications')
-    .select('*')
-    .eq('user_id', userId)
-    .order('application_date', { ascending: false });
-  
-  if (error) {
-    console.error('Error getting applications:', error);
-    throw error;
+export async function getApplications(userId: string): Promise<SupabaseResponse<Application[]>> {
+  try {
+    const { data, error } = await supabase
+      .from('applications')
+      .select('*')
+      .eq('user_id', userId)
+      .order('application_date', { ascending: false });
+    
+    if (error) {
+      console.error('Error getting applications:', error);
+      return { data: null, error: error.message };
+    }
+    
+    return { data, error: null };
+  } catch (err: any) {
+    console.error('Exception getting applications:', err);
+    return { data: null, error: err.message || 'An unexpected error occurred while retrieving applications' };
   }
-  
-  return data;
 }
 
-export async function getApplicationById(id: string) {
-  const { data, error } = await supabase
-    .from('applications')
-    .select('*')
-    .eq('id', id)
-    .single();
-  
-  if (error) {
-    console.error('Error getting application:', error);
-    throw error;
+export async function getApplicationById(id: string): Promise<SupabaseResponse<Application>> {
+  try {
+    const { data, error } = await supabase
+      .from('applications')
+      .select('*')
+      .eq('id', id)
+      .single();
+    
+    if (error) {
+      console.error('Error getting application:', error);
+      return { data: null, error: error.message };
+    }
+    
+    return { data, error: null };
+  } catch (err: any) {
+    console.error('Exception getting application:', err);
+    return { data: null, error: err.message || 'An unexpected error occurred while retrieving the application' };
   }
-  
-  return data;
 }
 
-export async function updateApplication(id: string, updates: Partial<Application>) {
-  const { data, error } = await supabase
-    .from('applications')
-    .update(updates)
-    .eq('id', id)
-    .select()
-    .single();
-  
-  if (error) {
-    console.error('Error updating application:', error);
-    throw error;
+export async function updateApplication(id: string, updates: Partial<Application>): Promise<SupabaseResponse<Application>> {
+  try {
+    const { data, error } = await supabase
+      .from('applications')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('Error updating application:', error);
+      return { data: null, error: error.message };
+    }
+    
+    return { data, error: null };
+  } catch (err: any) {
+    console.error('Exception updating application:', err);
+    return { data: null, error: err.message || 'An unexpected error occurred while updating the application' };
   }
-  
-  return data;
 }
 
-export async function deleteApplication(id: string) {
-  const { error } = await supabase
-    .from('applications')
-    .delete()
-    .eq('id', id);
-  
-  if (error) {
-    console.error('Error deleting application:', error);
-    throw error;
+export async function deleteApplication(id: string): Promise<SupabaseResponse<boolean>> {
+  try {
+    const { error } = await supabase
+      .from('applications')
+      .delete()
+      .eq('id', id);
+    
+    if (error) {
+      console.error('Error deleting application:', error);
+      return { data: null, error: error.message };
+    }
+    
+    return { data: true, error: null };
+  } catch (err: any) {
+    console.error('Exception deleting application:', err);
+    return { data: null, error: err.message || 'An unexpected error occurred while deleting the application' };
   }
-  
-  return true;
 }
 
 // Statistics and analytics
@@ -198,29 +249,38 @@ export async function getApplicationStats(userId: string) {
     if (error) {
       console.error('Error getting application stats:', error);
       return {
+        data: {
+          total: 0,
+          applied: 0,
+          interviewing: 0,
+          offer: 0,
+          rejected: 0,
+        },
+        error: error.message
+      };
+    }
+    
+    return {
+      data: data || {
         total: 0,
         applied: 0,
         interviewing: 0,
         offer: 0,
         rejected: 0,
-      };
-    }
-    
-    return data || {
-      total: 0,
-      applied: 0,
-      interviewing: 0,
-      offer: 0,
-      rejected: 0,
+      },
+      error: null
     };
-  } catch (error) {
-    console.error('Exception getting application stats:', error);
+  } catch (err: any) {
+    console.error('Exception getting application stats:', err);
     return {
-      total: 0,
-      applied: 0,
-      interviewing: 0,
-      offer: 0,
-      rejected: 0,
+      data: {
+        total: 0,
+        applied: 0,
+        interviewing: 0,
+        offer: 0,
+        rejected: 0,
+      },
+      error: err.message || 'An unexpected error occurred while retrieving application stats'
     };
   }
 }
@@ -246,4 +306,4 @@ export async function setupSubscription(
       }
     )
     .subscribe();
-}
+        }
