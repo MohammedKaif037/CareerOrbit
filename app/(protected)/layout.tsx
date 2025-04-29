@@ -19,7 +19,10 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
 
         if (!session) {
           console.log("No session found, redirecting to login");
-          router.replace(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
+          //router.replace(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
+          const pathname = window.location.pathname.replace(/^\/protected/, '');
+          router.replace(`/login?redirect=${encodeURIComponent(pathname)}`);
+          
         } else {
           setIsAuthenticated(true);
         }
