@@ -39,7 +39,7 @@ export function AppSidebar() {
     {
       title: "Applications",
       icon: ListChecks,
-      href: "/applications",
+      href: "/protected/applications",
     },
     {
       title: "Your Applications",
@@ -49,7 +49,7 @@ export function AppSidebar() {
     {
       title: "Add Application",
       icon: PlusCircle,
-      href: "/applications/new",
+      href: "/protected/applications/new",
     },
     {
       title: "Interviews",
