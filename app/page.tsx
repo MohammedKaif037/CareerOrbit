@@ -14,7 +14,7 @@ export default function HomePage() {
 
         if (data.session) {
           // If authenticated, redirect to dashboard
-          window.location.href = "/protected/dashboard"
+          window.location.href = "/dashboard"
         } else {
           // If not authenticated, redirect to login
           window.location.href = "/login"
