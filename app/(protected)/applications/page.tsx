@@ -52,7 +52,7 @@ export default function Applications() {
           <p className="text-muted-foreground">Manage your job applications</p>
         </div>
         <Button asChild size="lg" className="gap-2">
-          <Link href="/applications/new">
+          <Link href="protected/applications/new">
             <PlusCircle className="h-5 w-5" />
             New Application
           </Link>
