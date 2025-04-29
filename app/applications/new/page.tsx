@@ -9,18 +9,18 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Rocket, ArrowLeft, Loader2 } from "lucide-react"
+import { Rocket, ArrowLeft, Loader2, AlertCircle } from "lucide-react"
 import Link from "next/link"
 import { motion } from "framer-motion"
 import { useAuth } from "@/lib/auth-context"
 import { createApplication } from "@/lib/supabase-client"
 import { useRouter } from "next/navigation"
-import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 export default function NewApplication() {
   const { user } = useAuth();
   const router = useRouter();
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
 
   const [formStep, setFormStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -54,27 +54,57 @@ export default function NewApplication() {
   const handleChange = (e) => {
     const { id, value } = e.target;
     setFormData(prev => ({ ...prev, [id]: value }));
+    // Clear previous errors when form is modified
+    if (error) setError(null);
   };
 
   const handleSelectChange = (id, value) => {
     setFormData(prev => ({ ...prev, [id]: value }));
+    // Clear previous errors when form is modified
+    if (error) setError(null);
   };
 
   const handleCheckboxChange = (id, checked) => {
     setFormData(prev => ({ ...prev, [id]: checked }));
+    // Clear previous errors when form is modified
+    if (error) setError(null);
   };
 
-  const nextStep = () => setFormStep(prev => prev + 1);
-  const prevStep = () => setFormStep(prev => prev - 1);
+  const nextStep = () => {
+    // Basic validation for first step
+    if (formStep === 0) {
+      if (!formData.company_name.trim()) {
+        setError('Company name is required');
+        return;
+      }
+      if (!formData.job_title.trim()) {
+        setError('Job title is required');
+        return;
+      }
+      if (!formData.location.trim()) {
+        setError('Location is required');
+        return;
+      }
+    }
+    
+    setError(null);
+    setFormStep(prev => prev + 1);
+  };
+  
+  const prevStep = () => {
+    setError(null);
+    setFormStep(prev => prev - 1);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!user) {
-      alert('You must be logged in to create an application');
+      setError('You must be logged in to create an application');
       return;
     }
 
     setIsSubmitting(true);
+    setError(null);
 
     try {
       const applicationData = {
@@ -89,16 +119,21 @@ export default function NewApplication() {
         priority: parseInt(formData.priority, 10) // Ensure priority is a number
       };
 
-      const result = await createApplication(applicationData);
+      const { data, error: apiError } = await createApplication(applicationData);
 
-      if (result) {
+      if (apiError) {
+        setError(apiError);
+        return;
+      }
+
+      if (data) {
         router.push('/applications');
       } else {
-        throw new Error('Failed to create application');
+        setError('Failed to create application. Please try again.');
       }
-    } catch (error) {
-      console.error('Error creating application:', error);
-      setError('Failed to create application. Please try again.');
+    } catch (err) {
+      console.error('Error creating application:', err);
+      setError(err instanceof Error ? err.message : 'An unexpected error occurred');
     } finally {
       setIsSubmitting(false);
     }
@@ -119,6 +154,8 @@ export default function NewApplication() {
         <form onSubmit={handleSubmit}>
           {error && (
             <Alert variant="destructive" className="m-4">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Error</AlertTitle>
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
@@ -282,4 +319,4 @@ export default function NewApplication() {
       </Card>
     </div>
   )
-}
+                    }
