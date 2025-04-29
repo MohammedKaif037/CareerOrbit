@@ -5,33 +5,42 @@ export const dynamic = "force-dynamic";
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { PlusCircle, Search, Filter } from "lucide-react"
+import { PlusCircle, Search, Filter, AlertCircle } from "lucide-react"
 import Link from "next/link"
 import { ApplicationList } from "@/components/application-list"
 import { Input } from "@/components/ui/input"
 import { getApplications, Application } from "@/lib/supabase-client"
 import { useAuth } from '@/lib/auth-context';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export default function Applications() {
   const { user } = useAuth();
   const [applications, setApplications] = useState<Application[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchApplications = async () => {
-      if (!user) return; // <--- only fetch if user is available
-      setIsLoading(true);
-      const data = await getApplications();
-      setApplications(data);
-      setIsLoading(false);
+      if (!user) return; // only fetch if user is available
+      
+      try {
+        setIsLoading(true);
+        setError(null); // Clear any previous errors
+        const data = await getApplications();
+        setApplications(data);
+      } catch (err) {
+        console.error("Error fetching applications:", err);
+        setError(err instanceof Error ? err.message : "Failed to load applications");
+      } finally {
+        setIsLoading(false);
+      }
     };
 
     fetchApplications();
   }, [user]);
 
   if (!user) {
-    // <--- Add this safe check
     return (
       <div className="flex justify-center items-center min-h-screen">
         <p>Loading user...</p>
@@ -58,6 +67,15 @@ export default function Applications() {
           </Link>
         </Button>
       </div>
+
+      {/* Display errors if any */}
+      {error && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
 
       <Card className="glass-card">
         <CardHeader>
