@@ -20,6 +20,8 @@ import { Checkbox } from "@/components/ui/checkbox"
 export default function NewApplication() {
   const { user } = useAuth();
   const router = useRouter();
+  const [error, setError] = useState<string | null>(null);
+
 
   const [formStep, setFormStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
