@@ -1,3 +1,4 @@
+// no create in same file like this
 'use client';
 
 import { useEffect, useState } from "react";
@@ -60,7 +61,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   );
 }
 
-// ✅ Inline StarField Component (used as background)
 function StarField() {
   return (
     <div className="absolute inset-0 overflow-hidden">
