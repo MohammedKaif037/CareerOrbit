@@ -13,20 +13,28 @@ export const metadata: Metadata = {
   description: "Track your job applications with a cosmic-themed interface",
 }
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode
-}>) {
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
-        <AuthProvider>
-          <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
-            {children}
-          </ThemeProvider>
-        </AuthProvider>
+        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
+          <AuthProvider> {/* ✅ Wrap everything here */}
+            <SidebarProvider>
+              <div className="flex min-h-screen">
+                <AppSidebar />
+                <main className="flex-1 bg-gradient-to-b from-background to-background/80 relative overflow-hidden">
+                  <div className="absolute inset-0 z-0">
+                    <StarField />
+                  </div>
+                  <div className="relative z-10 h-full">{children}</div>
+                </main>
+              </div>
+            </SidebarProvider>
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
-  )
+  );
 }
+
