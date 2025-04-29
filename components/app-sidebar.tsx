@@ -34,12 +34,12 @@ export function AppSidebar() {
     {
       title: "Dashboard",
       icon: Home,
-      href: "/protected/dashboard",
+      href: "/dashboard",
     },
     {
       title: "Applications",
       icon: ListChecks,
-      href: "/protected/applications",
+      href: "/applications",
     },
     {
       title: "Your Applications",
@@ -49,7 +49,7 @@ export function AppSidebar() {
     {
       title: "Add Application",
       icon: PlusCircle,
-      href: "/protected/applications/new",
+      href: "/applications/new",
     },
     {
       title: "Interviews",
@@ -80,7 +80,7 @@ export function AppSidebar() {
   return (
     <Sidebar>
       <SidebarHeader className="flex items-center justify-center py-6">
-        <Link href="/protected/dashboard" className="flex items-center gap-2">
+        <Link href="/dashboard" className="flex items-center gap-2">
           <Rocket className="h-6 w-6 text-primary" />
           <span className="text-xl font-bold">Career Orbit</span>
         </Link>

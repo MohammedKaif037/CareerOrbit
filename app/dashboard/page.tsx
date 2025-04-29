@@ -70,7 +70,7 @@ export default function Dashboard() {
             </Link>
           </Button>
           <Button asChild size="lg" className="gap-2">
-            <Link href="/protected/applications/new">
+            <Link href="/applications/new">
               <PlusCircle className="h-5 w-5" />
               Launch New Application
             </Link>
