@@ -64,13 +64,13 @@ export default function Dashboard() {
         </div>
         <div className="flex gap-2">
           <Button variant="outline" asChild className="gap-2">
-            <Link href="/your-applications">
+            <Link href="/protected/your-applications">
               <Table2 className="h-5 w-5" />
               View Spreadsheet
             </Link>
           </Button>
           <Button asChild size="lg" className="gap-2">
-            <Link href="/applications/new">
+            <Link href="/protected/applications/new">
               <PlusCircle className="h-5 w-5" />
               Launch New Application
             </Link>
