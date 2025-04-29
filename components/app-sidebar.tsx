@@ -34,7 +34,7 @@ export function AppSidebar() {
     {
       title: "Dashboard",
       icon: Home,
-      href: "/dashboard",
+      href: "/protected/dashboard",
     },
     {
       title: "Applications",
