@@ -34,37 +34,37 @@ export function AppSidebar() {
     {
       title: "Dashboard",
       icon: Home,
-      href: "/protected/dashboard",
+      href: "/dashboard",
     },
     {
       title: "Applications",
       icon: ListChecks,
-      href: "/protected/applications",
+      href: "/applications",
     },
     {
       title: "Your Applications",
       icon: Table2,
-      href: "/protected/your-applications",
+      href: "/your-applications",
     },
     {
       title: "Add Application",
       icon: PlusCircle,
-      href: "/protected/applications/new",
+      href: "/applications/new",
     },
     {
       title: "Interviews",
       icon: Calendar,
-      href: "/protected/interviews",
+      href: "/interviews",
     },
     {
       title: "Analytics",
       icon: BarChart3,
-      href: "/protected/analytics",
+      href: "/analytics",
     },
     {
       title: "Settings",
       icon: Settings,
-      href: "/protected/settings",
+      href: "/settings",
     },
   ]
 
