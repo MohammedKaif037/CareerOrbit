@@ -9,19 +9,18 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Rocket, ArrowLeft, Paperclip, FileText } from "lucide-react"
+import { Rocket, ArrowLeft, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { motion } from "framer-motion"
 import { useAuth } from "@/lib/auth-context"
 import { createApplication } from "@/lib/supabase-client"
 import { useRouter } from "next/navigation"
-import { Checkbox } from "@/components/ui/checkbox"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 
 export default function NewApplication() {
   const { user } = useAuth();
   const router = useRouter();
-  const [error, setError] = useState<string | null>(null);
-
+  const [error, setError] = useState(null);
 
   const [formStep, setFormStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -37,10 +36,11 @@ export default function NewApplication() {
     salary_range: '',
     resume_sent: false,
     cover_letter_sent: false,
-    application_method: 'Website',
+    application_method: 'Company Website',
     contact_name: '',
     contact_email: '',
     follow_up_date: '',
+    priority: '3', // Set a default value for priority
   });
 
   if (!user) {
@@ -51,23 +51,23 @@ export default function NewApplication() {
     );
   }
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (e) => {
     const { id, value } = e.target;
     setFormData(prev => ({ ...prev, [id]: value }));
   };
 
-  const handleSelectChange = (id: string, value: string) => {
+  const handleSelectChange = (id, value) => {
     setFormData(prev => ({ ...prev, [id]: value }));
   };
 
-  const handleCheckboxChange = (id: string, checked: boolean) => {
+  const handleCheckboxChange = (id, checked) => {
     setFormData(prev => ({ ...prev, [id]: checked }));
   };
 
   const nextStep = () => setFormStep(prev => prev + 1);
   const prevStep = () => setFormStep(prev => prev - 1);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!user) {
       alert('You must be logged in to create an application');
@@ -86,6 +86,7 @@ export default function NewApplication() {
           : null,
         follow_up_required: false,
         interview_scheduled: false,
+        priority: parseInt(formData.priority, 10) // Ensure priority is a number
       };
 
       const result = await createApplication(applicationData);
@@ -97,12 +98,11 @@ export default function NewApplication() {
       }
     } catch (error) {
       console.error('Error creating application:', error);
-      alert('Failed to create application. Please try again.');
+      setError('Failed to create application. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
   };
-
 
   return (
     <div className="container max-w-3xl mx-auto p-6 space-y-8">
@@ -232,18 +232,18 @@ export default function NewApplication() {
                 <div className="space-y-2">
                   <Label htmlFor="priority">Priority (1-5)</Label>
                   <Select
-                    value={formData.priority.toString()}
+                    value={formData.priority}
                     onValueChange={(value) => handleSelectChange("priority", value)}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select priority" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="1">â˜… (Low)</SelectItem>
-                      <SelectItem value="2">â˜…â˜…</SelectItem>
-                      <SelectItem value="3">â˜…â˜…â˜… (Medium)</SelectItem>
-                      <SelectItem value="4">â˜…â˜…â˜…â˜…</SelectItem>
-                      <SelectItem value="5">â˜…â˜…â˜…â˜…â˜… (High)</SelectItem>
+                      <SelectItem value="1">★ (Low)</SelectItem>
+                      <SelectItem value="2">★★</SelectItem>
+                      <SelectItem value="3">★★★ (Medium)</SelectItem>
+                      <SelectItem value="4">★★★★</SelectItem>
+                      <SelectItem value="5">★★★★★ (High)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -282,4 +282,4 @@ export default function NewApplication() {
       </Card>
     </div>
   )
-        }
+}
