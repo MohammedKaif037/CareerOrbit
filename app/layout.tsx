@@ -4,6 +4,8 @@ import { Inter } from "next/font/google"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { AuthProvider } from "@/lib/auth-context"; //Adjust if path differs
+import { SidebarProvider } from "@/components/ui/sidebar";
+
 
 
 const inter = Inter({ subsets: ["latin"] })
