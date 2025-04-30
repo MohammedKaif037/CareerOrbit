@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import { supabase } from "@/lib/supabase-client"
+import { supabase, Application } from "@/lib/supabase-client"
 import { motion } from "framer-motion"
 
 const getStatusColor = (status: string) => {
@@ -22,7 +22,7 @@ const getStatusColor = (status: string) => {
 export function ApplicationsGalaxy() {
   const containerRef = useRef<HTMLDivElement>(null)
   const [applications, setApplications] = useState<any[]>([])
-  const [selectedApplication, setSelectedApplication] = useState<string | null>(null)
+  const [selectedId, setSelectedId] = useState<number | null>(null)
 
   useEffect(() => {
     async function fetchApplications() {
@@ -71,24 +71,19 @@ export function ApplicationsGalaxy() {
     return () => document.removeEventListener("mousemove", handleMouseMove)
   }, [])
 
-  // Handle click outside to close tooltip
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (selectedApplication && !e.target.closest('.application-star')) {
-        setSelectedApplication(null)
-      }
+  // Deselect info box if clicking outside any dot
+  const handleContainerClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === containerRef.current) {
+      setSelectedId(null)
     }
-
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [selectedApplication])
-
-  const handleStarClick = (appId: string) => {
-    setSelectedApplication(selectedApplication === appId ? null : appId)
   }
 
   return (
-    <div ref={containerRef} className="relative w-full h-full overflow-hidden rounded-lg">
+    <div
+      ref={containerRef}
+      className="relative w-full h-full overflow-hidden rounded-lg"
+      onClick={handleContainerClick}
+    >
       {/* Background stars */}
       {Array.from({ length: 50 }).map((_, i) => (
         <div
@@ -108,18 +103,14 @@ export function ApplicationsGalaxy() {
       {applications.map((app, index) => {
         const color = getStatusColor(app.status)
         const speed = (app.size / 20) * 0.1 + 0.02
-        const isSelected = selectedApplication === app.id
 
         return (
           <motion.div
             key={app.id}
-            className="application-star absolute rounded-full cursor-pointer"
+            className="application-star absolute rounded-full cursor-pointer group"
             data-speed={speed}
             initial={{ scale: 0 }}
-            animate={{ 
-              scale: isSelected ? 1.5 : 1,
-              zIndex: isSelected ? 20 : 10
-            }}
+            animate={{ scale: 1 }}
             transition={{ duration: 0.5, delay: index * 0.05 }}
             style={{
               left: `${app.x}%`,
@@ -129,13 +120,17 @@ export function ApplicationsGalaxy() {
               backgroundColor: color,
               boxShadow: `0 0 ${app.size / 2}px ${color}`,
             }}
-            whileHover={{ scale: isSelected ? 1.5 : 1.3 }}
-            onClick={() => handleStarClick(app.id)}
+            whileHover={{ scale: 1.5 }}
+            onClick={e => {
+              e.stopPropagation() // Prevent container click
+              setSelectedId(app.id)
+            }}
           >
-            <div 
-              className={`absolute bg-black/80 text-white p-2 rounded-md text-xs whitespace-nowrap z-10 -translate-x-1/2 -translate-y-full -mt-2 left-1/2 top-0 transition-opacity duration-200 ${
-                isSelected ? 'opacity-100' : 'opacity-0 hover:opacity-100'
-              }`}
+            <div
+              className={
+                "absolute transition-opacity duration-200 bg-black/80 text-white p-2 rounded-md text-xs whitespace-nowrap z-10 -translate-x-1/2 -translate-y-full -mt-2 left-1/2 top-0 " +
+                ((selectedId === app.id) ? "opacity-100" : "opacity-0 group-hover:opacity-100")
+              }
             >
               <p className="font-bold">{app.company_name}</p>
               <p>{app.job_title}</p>
@@ -146,4 +141,4 @@ export function ApplicationsGalaxy() {
       })}
     </div>
   )
-            }
+}
