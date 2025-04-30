@@ -1,4 +1,4 @@
-"use client"
+ "use client"
 
 import { useEffect, useRef, useState } from "react"
 import { supabase, Application } from "@/lib/supabase-client"
@@ -22,7 +22,6 @@ const getStatusColor = (status: string) => {
 export function ApplicationsGalaxy() {
   const containerRef = useRef<HTMLDivElement>(null)
   const [applications, setApplications] = useState<any[]>([])
-  const [selectedApp, setSelectedApp] = useState<string | null>(null)
 
   useEffect(() => {
     async function fetchApplications() {
@@ -35,11 +34,12 @@ export function ApplicationsGalaxy() {
         .eq("user_id", userData.user.id)
 
       if (data) {
+        // enrich with random galaxy coordinates and size
         const enriched = data.map((app, i) => ({
           ...app,
-          x: Math.random() * 80 + 10,
+          x: Math.random() * 80 + 10, // 10–90%
           y: Math.random() * 80 + 10,
-          size: Math.random() * 10 + 10,
+          size: Math.random() * 10 + 10, // 10–20px
         }))
         setApplications(enriched)
       }
@@ -48,6 +48,7 @@ export function ApplicationsGalaxy() {
     fetchApplications()
   }, [])
 
+  // Mouse parallax effect
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (!containerRef.current) return
@@ -71,6 +72,7 @@ export function ApplicationsGalaxy() {
 
   return (
     <div ref={containerRef} className="relative w-full h-full overflow-hidden rounded-lg">
+      {/* Background stars */}
       {Array.from({ length: 50 }).map((_, i) => (
         <div
           key={`bg-star-${i}`}
@@ -85,6 +87,7 @@ export function ApplicationsGalaxy() {
         />
       ))}
 
+      {/* Application stars */}
       {applications.map((app, index) => {
         const color = getStatusColor(app.status)
         const speed = (app.size / 20) * 0.1 + 0.02
@@ -106,13 +109,8 @@ export function ApplicationsGalaxy() {
               boxShadow: `0 0 ${app.size / 2}px ${color}`,
             }}
             whileHover={{ scale: 1.5 }}
-            onClick={() => setSelectedApp(prev => prev === app.id ? null : app.id)}
           >
-            <div
-              className={`absolute transition-opacity duration-200 bg-black/80 text-white p-2 rounded-md text-xs whitespace-nowrap z-10 -translate-x-1/2 -translate-y-full -mt-2 left-1/2 top-0 ${
-                selectedApp === app.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-              }`}
-            >
+            <div className="absolute opacity-0 hover:opacity-100 transition-opacity duration-200 bg-black/80 text-white p-2 rounded-md text-xs whitespace-nowrap z-10 -translate-x-1/2 -translate-y-full -mt-2 left-1/2 top-0">
               <p className="font-bold">{app.company_name}</p>
               <p>{app.job_title}</p>
               <p className="capitalize">{app.status}</p>
@@ -122,4 +120,4 @@ export function ApplicationsGalaxy() {
       })}
     </div>
   )
-                        }
+            }
