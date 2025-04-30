@@ -102,7 +102,7 @@ export default function ScheduleInterviewPage() {
 
           <div>
             <Label>Type</Label>
-            <select name="event_type" value={form.event_type} onChange={handleChange} className="w-full p-2 border rounded">
+            <select name="event_type" value={form.event_type} onChange={handleChange}>
               <option value="video">Video</option>
               <option value="onsite">On-site</option>
             </select>
