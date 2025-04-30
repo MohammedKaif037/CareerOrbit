@@ -11,12 +11,41 @@ export function InterviewCalendar() {
   const [date, setDate] = useState<Date | undefined>(new Date())
   const [interviews, setInterviews] = useState<any[]>([])
   const [selectedInterview, setSelectedInterview] = useState<any | null>(null)
+  const [debugInfo, setDebugInfo] = useState<any>(null)
 
   useEffect(() => {
     async function fetchInterviews() {
-      const { data: userData } = await supabase.auth.getUser()
-      if (!userData?.user) return
-
+      // Fetch the current user
+      const { data: userData, error: userError } = await supabase.auth.getUser()
+      
+      if (userError) {
+        console.error("Error fetching user:", userError)
+        setDebugInfo({ type: "auth_error", error: userError })
+        return
+      }
+      
+      if (!userData?.user) {
+        console.log("No user found")
+        setDebugInfo({ type: "no_user" })
+        return
+      }
+      
+      console.log("Current user ID:", userData.user.id)
+      
+      // Fetch all interviews to check if there are any in the database
+      const { data: allData, error: allError } = await supabase
+        .from("interview_events")
+        .select("*")
+      
+      if (allError) {
+        console.error("Error fetching all interviews:", allError)
+        setDebugInfo({ type: "all_query_error", error: allError })
+        return
+      }
+      
+      console.log("All interviews in DB:", allData)
+      
+      // Fetch only this user's interviews
       const { data, error } = await supabase
         .from("interview_events")
         .select("*")
@@ -24,9 +53,22 @@ export function InterviewCalendar() {
         .order("scheduled_time", { ascending: true })
 
       if (error) {
-        console.error("Error fetching interviews:", error)
+        console.error("Error fetching user interviews:", error)
+        setDebugInfo({ 
+          type: "user_query_error", 
+          error, 
+          userId: userData.user.id,
+          allInterviews: allData
+        })
       } else {
+        console.log("User interviews found:", data)
         setInterviews(data || [])
+        setDebugInfo({ 
+          type: "success", 
+          count: data?.length || 0,
+          userId: userData.user.id,
+          allInterviews: allData
+        })
       }
     }
 
@@ -36,28 +78,63 @@ export function InterviewCalendar() {
   const getInterviewsForDate = (date: Date | undefined) => {
     if (!date) return []
 
-    return interviews.filter((interview) => {
-      const interviewDate = new Date(interview.scheduled_time)
-      return (
-        interviewDate.getDate() === date.getDate() &&
-        interviewDate.getMonth() === date.getMonth() &&
-        interviewDate.getFullYear() === date.getFullYear()
-      )
+    const matchingInterviews = interviews.filter((interview) => {
+      // Handle potentially invalid date strings
+      try {
+        const interviewDate = new Date(interview.scheduled_time)
+        
+        // Check if the date is valid
+        if (isNaN(interviewDate.getTime())) {
+          console.error("Invalid date format:", interview.scheduled_time)
+          return false
+        }
+        
+        const dateMatches = (
+          interviewDate.getDate() === date.getDate() &&
+          interviewDate.getMonth() === date.getMonth() &&
+          interviewDate.getFullYear() === date.getFullYear()
+        )
+        
+        if (dateMatches) {
+          console.log("Found matching interview for selected date:", interview)
+        }
+        
+        return dateMatches
+      } catch (err) {
+        console.error("Error processing date:", err)
+        return false
+      }
     })
+    
+    console.log(`Found ${matchingInterviews.length} interviews for ${date.toDateString()}`)
+    return matchingInterviews
   }
 
   const formatTime = (date: Date) => {
+    // Check for invalid date
+    if (isNaN(date.getTime())) {
+      return "Invalid time"
+    }
     return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
   }
 
   const isDayWithInterview = (day: Date) => {
     return interviews.some((interview) => {
-      const interviewDate = new Date(interview.scheduled_time)
-      return (
-        interviewDate.getDate() === day.getDate() &&
-        interviewDate.getMonth() === day.getMonth() &&
-        interviewDate.getFullYear() === day.getFullYear()
-      )
+      try {
+        const interviewDate = new Date(interview.scheduled_time)
+        // Check if the date is valid
+        if (isNaN(interviewDate.getTime())) {
+          return false
+        }
+        
+        return (
+          interviewDate.getDate() === day.getDate() &&
+          interviewDate.getMonth() === day.getMonth() &&
+          interviewDate.getFullYear() === day.getFullYear()
+        )
+      } catch (err) {
+        return false
+      }
     })
   }
 
@@ -65,6 +142,16 @@ export function InterviewCalendar() {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {/* Debug info panel - remove in production */}
+      {debugInfo && (
+        <div className="col-span-2 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-md mb-4">
+          <h3 className="text-lg font-bold mb-2">Debug Info</h3>
+          <pre className="text-xs overflow-auto max-h-40">
+            {JSON.stringify(debugInfo, null, 2)}
+          </pre>
+        </div>
+      )}
+      
       <div>
         <Calendar
           mode="single"
@@ -120,7 +207,7 @@ export function InterviewCalendar() {
                     ) : (
                       <>
                         <MapPin className="h-4 w-4 text-yellow-400" />
-                        <span>{interview.location}</span>
+                        <span>{interview.location || "No location specified"}</span>
                       </>
                     )}
                   </div>
@@ -167,24 +254,28 @@ export function InterviewCalendar() {
                   <h4 className="font-medium">Meeting Link</h4>
                   <p className="text-primary underline">
                     <a href={selectedInterview.meeting_url} target="_blank" rel="noopener noreferrer">
-                      {selectedInterview.meeting_url}
+                      {selectedInterview.meeting_url || "No meeting link provided"}
                     </a>
                   </p>
                 </div>
               ) : (
                 <div>
                   <h4 className="font-medium">Location</h4>
-                  <p>{selectedInterview.location}</p>
+                  <p>{selectedInterview.location || "No location specified"}</p>
                 </div>
               )}
 
               <div>
                 <h4 className="font-medium">Interviewers</h4>
-                <ul className="list-disc list-inside">
-                  {selectedInterview.interviewers?.map((i: string, index: number) => (
-                    <li key={index}>{i}</li>
-                  ))}
-                </ul>
+                {selectedInterview.interviewers && selectedInterview.interviewers.length > 0 ? (
+                  <ul className="list-disc list-inside">
+                    {selectedInterview.interviewers.map((i: string, index: number) => (
+                      <li key={index}>{i}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p>No interviewers specified</p>
+                )}
               </div>
             </CardContent>
           </Card>
