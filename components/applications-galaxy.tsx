@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import { supabase, Application } from "@/lib/supabase-client"
+import { supabase } from "@/lib/supabase-client"
 import { motion } from "framer-motion"
 
 const getStatusColor = (status: string) => {
@@ -22,6 +22,7 @@ const getStatusColor = (status: string) => {
 export function ApplicationsGalaxy() {
   const containerRef = useRef<HTMLDivElement>(null)
   const [applications, setApplications] = useState<any[]>([])
+  const [selectedApplication, setSelectedApplication] = useState<string | null>(null)
 
   useEffect(() => {
     async function fetchApplications() {
@@ -70,6 +71,22 @@ export function ApplicationsGalaxy() {
     return () => document.removeEventListener("mousemove", handleMouseMove)
   }, [])
 
+  // Handle click outside to close tooltip
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (selectedApplication && !e.target.closest('.application-star')) {
+        setSelectedApplication(null)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [selectedApplication])
+
+  const handleStarClick = (appId: string) => {
+    setSelectedApplication(selectedApplication === appId ? null : appId)
+  }
+
   return (
     <div ref={containerRef} className="relative w-full h-full overflow-hidden rounded-lg">
       {/* Background stars */}
@@ -91,6 +108,7 @@ export function ApplicationsGalaxy() {
       {applications.map((app, index) => {
         const color = getStatusColor(app.status)
         const speed = (app.size / 20) * 0.1 + 0.02
+        const isSelected = selectedApplication === app.id
 
         return (
           <motion.div
@@ -98,7 +116,10 @@ export function ApplicationsGalaxy() {
             className="application-star absolute rounded-full cursor-pointer"
             data-speed={speed}
             initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
+            animate={{ 
+              scale: isSelected ? 1.5 : 1,
+              zIndex: isSelected ? 20 : 10
+            }}
             transition={{ duration: 0.5, delay: index * 0.05 }}
             style={{
               left: `${app.x}%`,
@@ -108,9 +129,14 @@ export function ApplicationsGalaxy() {
               backgroundColor: color,
               boxShadow: `0 0 ${app.size / 2}px ${color}`,
             }}
-            whileHover={{ scale: 1.5 }}
+            whileHover={{ scale: isSelected ? 1.5 : 1.3 }}
+            onClick={() => handleStarClick(app.id)}
           >
-            <div className="absolute opacity-0 hover:opacity-100 transition-opacity duration-200 bg-black/80 text-white p-2 rounded-md text-xs whitespace-nowrap z-10 -translate-x-1/2 -translate-y-full -mt-2 left-1/2 top-0">
+            <div 
+              className={`absolute bg-black/80 text-white p-2 rounded-md text-xs whitespace-nowrap z-10 -translate-x-1/2 -translate-y-full -mt-2 left-1/2 top-0 transition-opacity duration-200 ${
+                isSelected ? 'opacity-100' : 'opacity-0 hover:opacity-100'
+              }`}
+            >
               <p className="font-bold">{app.company_name}</p>
               <p>{app.job_title}</p>
               <p className="capitalize">{app.status}</p>
@@ -120,4 +146,4 @@ export function ApplicationsGalaxy() {
       })}
     </div>
   )
-}
+            }
