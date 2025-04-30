@@ -1,15 +1,14 @@
 'use client';
-
 export const dynamic = "force-dynamic";
 
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { PlusCircle, Search, Filter, AlertCircle } from "lucide-react"
+import { PlusCircle, Search, Filter, AlertCircle, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { ApplicationList } from "@/components/application-list"
 import { Input } from "@/components/ui/input"
-import { getApplications, Application } from "@/lib/supabase-client"
+import { supabase, Application } from "@/lib/supabase-client"
 import { useAuth } from '@/lib/auth-context';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
@@ -27,27 +26,67 @@ export default function Applications() {
       try {
         setIsLoading(true);
         setError(null); // Clear any previous errors
-        const data = await getApplications(user.id);
-        setApplications(data);
+        
+        // Direct query instead of using the helper function to ensure we get the data correctly
+        const { data, error } = await supabase
+          .from('applications')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('application_date', { ascending: false });
+        
+        if (error) {
+          throw new Error(error.message);
+        }
+        
+        // Make sure data is an array before setting it
+        setApplications(Array.isArray(data) ? data : []);
       } catch (err) {
         console.error("Error fetching applications:", err);
         setError(err instanceof Error ? err.message : "Failed to load applications");
+        setApplications([]); // Set empty array on error
       } finally {
         setIsLoading(false);
       }
     };
-
+    
     fetchApplications();
+    
+    // Set up real-time subscription for updates
+    if (user) {
+      const subscription = supabase
+        .channel('applications-list-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'applications',
+            filter: `user_id=eq.${user.id}`,
+          },
+          async () => {
+            // Refresh the applications list when changes occur
+            fetchApplications();
+          }
+        )
+        .subscribe();
+      
+      // Cleanup subscription when component unmounts
+      return () => {
+        supabase.removeChannel(subscription);
+      };
+    }
   }, [user]);
 
+  // Show loading state while fetching user
   if (!user) {
     return (
       <div className="flex justify-center items-center min-h-screen">
-        <p>Loading user...</p>
+        <Loader2 className="h-8 w-8 animate-spin" />
       </div>
     );
   }
 
+  // Filter applications based on search term
   const filteredApplications = applications.filter((app) =>
     app.company_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     app.job_title.toLowerCase().includes(searchTerm.toLowerCase())
@@ -67,7 +106,7 @@ export default function Applications() {
           </Link>
         </Button>
       </div>
-
+      
       {/* Display errors if any */}
       {error && (
         <Alert variant="destructive">
@@ -76,12 +115,11 @@ export default function Applications() {
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
-
+      
       <Card className="glass-card">
         <CardHeader>
           <CardTitle>All Applications</CardTitle>
           <CardDescription>Browse and manage your job applications</CardDescription>
-
           <div className="flex flex-col sm:flex-row gap-4 mt-4">
             <div className="relative flex-1">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
