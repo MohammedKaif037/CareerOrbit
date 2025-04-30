@@ -27,7 +27,7 @@ export default function Applications() {
       try {
         setIsLoading(true);
         setError(null); // Clear any previous errors
-        const data = await getApplications();
+        const data = await getApplications(user.id);
         setApplications(data);
       } catch (err) {
         console.error("Error fetching applications:", err);
