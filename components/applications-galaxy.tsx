@@ -22,7 +22,7 @@ const getStatusColor = (status: string) => {
 export function ApplicationsGalaxy() {
   const containerRef = useRef<HTMLDivElement>(null)
   const [applications, setApplications] = useState<any[]>([])
-  const [selectedId, setSelectedId] = useState<number | null>(null)
+  const [selectedApp, setSelectedApp] = useState<string | null>(null)
 
   useEffect(() => {
     async function fetchApplications() {
@@ -35,12 +35,11 @@ export function ApplicationsGalaxy() {
         .eq("user_id", userData.user.id)
 
       if (data) {
-        // enrich with random galaxy coordinates and size
         const enriched = data.map((app, i) => ({
           ...app,
-          x: Math.random() * 80 + 10, // 10–90%
+          x: Math.random() * 80 + 10,
           y: Math.random() * 80 + 10,
-          size: Math.random() * 10 + 10, // 10–20px
+          size: Math.random() * 10 + 10,
         }))
         setApplications(enriched)
       }
@@ -49,7 +48,6 @@ export function ApplicationsGalaxy() {
     fetchApplications()
   }, [])
 
-  // Mouse parallax effect
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (!containerRef.current) return
@@ -71,20 +69,8 @@ export function ApplicationsGalaxy() {
     return () => document.removeEventListener("mousemove", handleMouseMove)
   }, [])
 
-  // Deselect info box if clicking outside any dot
-  const handleContainerClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (e.target === containerRef.current) {
-      setSelectedId(null)
-    }
-  }
-
   return (
-    <div
-      ref={containerRef}
-      className="relative w-full h-full overflow-hidden rounded-lg"
-      onClick={handleContainerClick}
-    >
-      {/* Background stars */}
+    <div ref={containerRef} className="relative w-full h-full overflow-hidden rounded-lg">
       {Array.from({ length: 50 }).map((_, i) => (
         <div
           key={`bg-star-${i}`}
@@ -99,7 +85,6 @@ export function ApplicationsGalaxy() {
         />
       ))}
 
-      {/* Application stars */}
       {applications.map((app, index) => {
         const color = getStatusColor(app.status)
         const speed = (app.size / 20) * 0.1 + 0.02
@@ -107,7 +92,7 @@ export function ApplicationsGalaxy() {
         return (
           <motion.div
             key={app.id}
-            className="application-star absolute rounded-full cursor-pointer group"
+            className="application-star absolute rounded-full cursor-pointer"
             data-speed={speed}
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
@@ -121,16 +106,12 @@ export function ApplicationsGalaxy() {
               boxShadow: `0 0 ${app.size / 2}px ${color}`,
             }}
             whileHover={{ scale: 1.5 }}
-            onClick={e => {
-              e.stopPropagation() // Prevent container click
-              setSelectedId(app.id)
-            }}
+            onClick={() => setSelectedApp(prev => prev === app.id ? null : app.id)}
           >
             <div
-              className={
-                "absolute transition-opacity duration-200 bg-black/80 text-white p-2 rounded-md text-xs whitespace-nowrap z-10 -translate-x-1/2 -translate-y-full -mt-2 left-1/2 top-0 " +
-                ((selectedId === app.id) ? "opacity-100" : "opacity-0 group-hover:opacity-100")
-              }
+              className={`absolute transition-opacity duration-200 bg-black/80 text-white p-2 rounded-md text-xs whitespace-nowrap z-10 -translate-x-1/2 -translate-y-full -mt-2 left-1/2 top-0 ${
+                selectedApp === app.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+              }`}
             >
               <p className="font-bold">{app.company_name}</p>
               <p>{app.job_title}</p>
@@ -141,4 +122,4 @@ export function ApplicationsGalaxy() {
       })}
     </div>
   )
-}
+                        }
