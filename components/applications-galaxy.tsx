@@ -1,38 +1,54 @@
 "use client"
 
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useState } from "react"
+import { supabase, Application } from "@/lib/supabase-client"
 import { motion } from "framer-motion"
 
-// Mock data for applications
-const applications = [
-  { id: 1, company: "SpaceX", position: "Frontend Developer", status: "applied", x: 30, y: 40, size: 15 },
-  { id: 2, company: "NASA", position: "UI Designer", status: "interview", x: 60, y: 20, size: 18 },
-  { id: 3, company: "Blue Origin", position: "Full Stack Developer", status: "rejected", x: 75, y: 60, size: 12 },
-  { id: 4, company: "Google", position: "Software Engineer", status: "offer", x: 40, y: 70, size: 20 },
-  { id: 5, company: "Microsoft", position: "Product Manager", status: "applied", x: 20, y: 30, size: 14 },
-  { id: 6, company: "Apple", position: "UX Researcher", status: "interview", x: 80, y: 40, size: 16 },
-  { id: 7, company: "Meta", position: "React Developer", status: "applied", x: 50, y: 50, size: 13 },
-  { id: 8, company: "Amazon", position: "Cloud Engineer", status: "offer", x: 65, y: 25, size: 19 },
-]
-
 const getStatusColor = (status: string) => {
-  switch (status) {
+  switch (status.toLowerCase()) {
     case "applied":
-      return "#3b82f6" // blue
-    case "interview":
-      return "#facc15" // yellow
+      return "#3b82f6"
+    case "interviewing":
+      return "#facc15"
     case "offer":
-      return "#4ade80" // green
+      return "#4ade80"
     case "rejected":
-      return "#f87171" // red
+      return "#f87171"
     default:
-      return "#a1a1aa" // gray
+      return "#a1a1aa"
   }
 }
 
 export function ApplicationsGalaxy() {
   const containerRef = useRef<HTMLDivElement>(null)
+  const [applications, setApplications] = useState<any[]>([])
 
+  useEffect(() => {
+    async function fetchApplications() {
+      const { data: userData } = await supabase.auth.getUser()
+      if (!userData?.user?.id) return
+
+      const { data, error } = await supabase
+        .from("applications")
+        .select("*")
+        .eq("user_id", userData.user.id)
+
+      if (data) {
+        // enrich with random galaxy coordinates and size
+        const enriched = data.map((app, i) => ({
+          ...app,
+          x: Math.random() * 80 + 10, // 10–90%
+          y: Math.random() * 80 + 10,
+          size: Math.random() * 10 + 10, // 10–20px
+        }))
+        setApplications(enriched)
+      }
+    }
+
+    fetchApplications()
+  }, [])
+
+  // Mouse parallax effect
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (!containerRef.current) return
@@ -46,7 +62,6 @@ export function ApplicationsGalaxy() {
         const speed = Number.parseFloat(star.getAttribute("data-speed") || "0.05")
         const offsetX = (x - 0.5) * speed * 50
         const offsetY = (y - 0.5) * speed * 50
-
         star.setAttribute("style", `transform: translate(${offsetX}px, ${offsetY}px)`)
       })
     }
@@ -73,7 +88,7 @@ export function ApplicationsGalaxy() {
       ))}
 
       {/* Application stars */}
-      {applications.map((app) => {
+      {applications.map((app, index) => {
         const color = getStatusColor(app.status)
         const speed = (app.size / 20) * 0.1 + 0.02
 
@@ -84,7 +99,7 @@ export function ApplicationsGalaxy() {
             data-speed={speed}
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
-            transition={{ duration: 0.5, delay: app.id * 0.1 }}
+            transition={{ duration: 0.5, delay: index * 0.05 }}
             style={{
               left: `${app.x}%`,
               top: `${app.y}%`,
@@ -96,8 +111,8 @@ export function ApplicationsGalaxy() {
             whileHover={{ scale: 1.5 }}
           >
             <div className="absolute opacity-0 hover:opacity-100 transition-opacity duration-200 bg-black/80 text-white p-2 rounded-md text-xs whitespace-nowrap z-10 -translate-x-1/2 -translate-y-full -mt-2 left-1/2 top-0">
-              <p className="font-bold">{app.company}</p>
-              <p>{app.position}</p>
+              <p className="font-bold">{app.company_name}</p>
+              <p>{app.job_title}</p>
               <p className="capitalize">{app.status}</p>
             </div>
           </motion.div>
