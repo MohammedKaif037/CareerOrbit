@@ -1,55 +1,43 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Calendar } from "@/components/ui/calendar"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Clock, MapPin, Video } from "lucide-react"
-
-// Mock interview data
-const interviews = [
-  {
-    id: 1,
-    company: "SpaceX",
-    position: "Frontend Developer",
-    date: new Date(2023, 3, 20, 14, 0), // April 20, 2023, 2:00 PM
-    duration: 60,
-    type: "video",
-    link: "https://meet.google.com/abc-defg-hij",
-    interviewers: ["John Doe", "Jane Smith"],
-  },
-  {
-    id: 2,
-    company: "NASA",
-    position: "UI Designer",
-    date: new Date(2023, 3, 22, 10, 30), // April 22, 2023, 10:30 AM
-    duration: 45,
-    type: "video",
-    link: "https://zoom.us/j/123456789",
-    interviewers: ["Michael Johnson"],
-  },
-  {
-    id: 3,
-    company: "Google",
-    position: "Software Engineer",
-    date: new Date(2023, 3, 25, 15, 0), // April 25, 2023, 3:00 PM
-    duration: 90,
-    type: "onsite",
-    location: "Mountain View, CA",
-    interviewers: ["Sarah Williams", "Robert Brown", "Emily Davis"],
-  },
-]
+import { supabase } from "@/lib/supabase-client"
 
 export function InterviewCalendar() {
   const [date, setDate] = useState<Date | undefined>(new Date())
+  const [interviews, setInterviews] = useState<any[]>([])
   const [selectedInterview, setSelectedInterview] = useState<any | null>(null)
 
-  // Function to get interviews for a specific date
+  useEffect(() => {
+    async function fetchInterviews() {
+      const { data: userData } = await supabase.auth.getUser()
+      if (!userData?.user) return
+
+      const { data, error } = await supabase
+        .from("interview_events")
+        .select("*")
+        .eq("user_id", userData.user.id)
+        .order("scheduled_time", { ascending: true })
+
+      if (error) {
+        console.error("Error fetching interviews:", error)
+      } else {
+        setInterviews(data || [])
+      }
+    }
+
+    fetchInterviews()
+  }, [])
+
   const getInterviewsForDate = (date: Date | undefined) => {
     if (!date) return []
 
     return interviews.filter((interview) => {
-      const interviewDate = new Date(interview.date)
+      const interviewDate = new Date(interview.scheduled_time)
       return (
         interviewDate.getDate() === date.getDate() &&
         interviewDate.getMonth() === date.getMonth() &&
@@ -58,18 +46,13 @@ export function InterviewCalendar() {
     })
   }
 
-  // Function to format time
   const formatTime = (date: Date) => {
     return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
   }
 
-  // Get interviews for the selected date
-  const interviewsForDate = getInterviewsForDate(date)
-
-  // Function to highlight dates with interviews
   const isDayWithInterview = (day: Date) => {
     return interviews.some((interview) => {
-      const interviewDate = new Date(interview.date)
+      const interviewDate = new Date(interview.scheduled_time)
       return (
         interviewDate.getDate() === day.getDate() &&
         interviewDate.getMonth() === day.getMonth() &&
@@ -77,6 +60,8 @@ export function InterviewCalendar() {
       )
     })
   }
+
+  const interviewsForDate = getInterviewsForDate(date)
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -115,19 +100,19 @@ export function InterviewCalendar() {
                 onClick={() => setSelectedInterview(interview)}
               >
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-lg">{interview.company}</CardTitle>
-                  <CardDescription>{interview.position}</CardDescription>
+                  <CardTitle className="text-lg">{interview.company || "Interview"}</CardTitle>
+                  <CardDescription>{interview.notes || interview.event_type}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-2">
                   <div className="flex items-center gap-2 text-sm">
                     <Clock className="h-4 w-4 text-yellow-400" />
                     <span>
-                      {formatTime(new Date(interview.date))} ({interview.duration} min)
+                      {formatTime(new Date(interview.scheduled_time))} ({interview.duration_minutes} min)
                     </span>
                   </div>
 
                   <div className="flex items-center gap-2 text-sm">
-                    {interview.type === "video" ? (
+                    {interview.event_type === "video" ? (
                       <>
                         <Video className="h-4 w-4 text-yellow-400" />
                         <span>Video Interview</span>
@@ -141,9 +126,9 @@ export function InterviewCalendar() {
                   </div>
 
                   <div className="flex flex-wrap gap-2 mt-2">
-                    {interview.interviewers.map((interviewer: string, index: number) => (
-                      <Badge key={index} variant="outline" className="bg-yellow-500/10 border-yellow-500/20">
-                        {interviewer}
+                    {interview.interviewers?.map((person: string, i: number) => (
+                      <Badge key={i} variant="outline" className="bg-yellow-500/10 border-yellow-500/20">
+                        {person}
                       </Badge>
                     ))}
                   </div>
@@ -158,14 +143,14 @@ export function InterviewCalendar() {
             <CardHeader>
               <CardTitle>Interview Details</CardTitle>
               <CardDescription>
-                {selectedInterview.company} - {selectedInterview.position}
+                {selectedInterview.company || "Interview"} - {selectedInterview.notes || selectedInterview.event_type}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
+              <div>
                 <h4 className="font-medium">Date & Time</h4>
                 <p>
-                  {new Date(selectedInterview.date).toLocaleString(undefined, {
+                  {new Date(selectedInterview.scheduled_time).toLocaleString(undefined, {
                     weekday: "long",
                     month: "long",
                     day: "numeric",
@@ -174,30 +159,30 @@ export function InterviewCalendar() {
                     minute: "2-digit",
                   })}
                 </p>
-                <p>Duration: {selectedInterview.duration} minutes</p>
+                <p>Duration: {selectedInterview.duration_minutes} minutes</p>
               </div>
 
-              {selectedInterview.type === "video" ? (
-                <div className="space-y-2">
+              {selectedInterview.event_type === "video" ? (
+                <div>
                   <h4 className="font-medium">Meeting Link</h4>
                   <p className="text-primary underline">
-                    <a href={selectedInterview.link} target="_blank" rel="noopener noreferrer">
-                      {selectedInterview.link}
+                    <a href={selectedInterview.meeting_url} target="_blank" rel="noopener noreferrer">
+                      {selectedInterview.meeting_url}
                     </a>
                   </p>
                 </div>
               ) : (
-                <div className="space-y-2">
+                <div>
                   <h4 className="font-medium">Location</h4>
                   <p>{selectedInterview.location}</p>
                 </div>
               )}
 
-              <div className="space-y-2">
+              <div>
                 <h4 className="font-medium">Interviewers</h4>
                 <ul className="list-disc list-inside">
-                  {selectedInterview.interviewers.map((interviewer: string, index: number) => (
-                    <li key={index}>{interviewer}</li>
+                  {selectedInterview.interviewers?.map((i: string, index: number) => (
+                    <li key={index}>{i}</li>
                   ))}
                 </ul>
               </div>
