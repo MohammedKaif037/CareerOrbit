@@ -543,20 +543,45 @@ export function ApplicationsTable() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="glass-card border-white/10">
-                          <DropdownMenuItem className="cursor-pointer">
+                          <DropdownMenuItem asChild>
+                          <Link href={`/applications/${app.id}/edit`} className="flex items-center">
                             <Edit className="mr-2 h-4 w-4" />
                             Edit
-                          </DropdownMenuItem>
-                          {app.job_url && (
-                            <DropdownMenuItem className="cursor-pointer">
-                              <ExternalLink className="mr-2 h-4 w-4" />
-                              View Job
+                          </Link>
+                        </DropdownMenuItem>
+
+                         {app.job_url && (
+                        <DropdownMenuItem
+                          className="cursor-pointer"
+                          onClick={() => window.open(app.job_url!, "_blank")}
+                        >
+                          <ExternalLink className="mr-2 h-4 w-4" />
+                          View Job
+                        </DropdownMenuItem>
+                      )}
+
+                            <DropdownMenuItem
+                              className="cursor-pointer text-red-500 focus:text-red-500"
+                              onClick={async () => {
+                                const confirmDelete = confirm("Are you sure you want to delete this application?");
+                                if (!confirmDelete) return;
+                            
+                                const { error } = await supabase
+                                  .from("applications")
+                                  .delete()
+                                  .eq("id", app.id);
+                            
+                                if (error) {
+                                  alert("Failed to delete application.");
+                                } else {
+                                  setApplications((prev) => prev.filter((a) => a.id !== app.id));
+                                }
+                              }}
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Delete
                             </DropdownMenuItem>
-                          )}
-                          <DropdownMenuItem className="cursor-pointer text-red-500 focus:text-red-500">
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Delete
-                          </DropdownMenuItem>
+
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </td>
