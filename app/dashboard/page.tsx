@@ -17,13 +17,16 @@ export default function Dashboard() {
     interviews: 0,
     offers: 0,
   })
+  const [userId, setUserId] = useState<string | null>(null)
 
   useEffect(() => {
-    async function loadStats() {
+    async function loadUserAndStats() {
       try {
         const { data: userData } = await supabase.auth.getUser()
 
-        if (userData.user) {
+        if (userData?.user) {
+          setUserId(userData.user.id)
+          
           // Get application stats
           const { data: statsData, error: statsError } = await supabase.rpc("get_application_stats", {
             user_id: userData.user.id,
@@ -38,14 +41,51 @@ export default function Dashboard() {
           }
         }
       } catch (error) {
-        console.error("Error loading stats:", error)
+        console.error("Error loading user and stats:", error)
       } finally {
         setIsLoading(false)
       }
     }
 
-    loadStats()
+    loadUserAndStats()
   }, [])
+
+  // Set up real-time subscription for updates
+  useEffect(() => {
+    if (!userId) return
+
+    const subscription = supabase
+      .channel('applications-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'applications',
+          filter: `user_id=eq.${userId}`,
+        },
+        async () => {
+          // Refresh stats when data changes
+          const { data: statsData } = await supabase.rpc("get_application_stats", {
+            user_id: userId,
+          })
+          
+          if (statsData) {
+            setStats({
+              total: statsData.total || 0,
+              interviews: statsData.interviewing || 0,
+              offers: statsData.offer || 0,
+            })
+          }
+        }
+      )
+      .subscribe()
+
+    // Cleanup subscription when component unmounts
+    return () => {
+      supabase.removeChannel(subscription)
+    }
+  }, [userId])
 
   if (isLoading) {
     return (
@@ -124,7 +164,7 @@ export default function Dashboard() {
             <CardDescription>Visualize your applications in cosmic space</CardDescription>
           </CardHeader>
           <CardContent className="h-[350px]">
-            <ApplicationsGalaxy />
+            <ApplicationsGalaxy userId={userId} />
           </CardContent>
         </Card>
 
