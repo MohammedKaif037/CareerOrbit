@@ -1,95 +1,100 @@
-// components/application-list.tsx
-import { Card } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Application } from "@/lib/supabase-client"
-import { ExternalLink, MoreHorizontal } from "lucide-react"
-import Link from "next/link"
-import { formatDistanceToNow } from "date-fns"
+"use client"
 
-interface ApplicationListProps {
-  applications: Application[];
-  isLoading: boolean;
+import { CalendarClock, CheckCircle, Clock, XCircle, Loader2 } from "lucide-react"
+import { Application } from "@/lib/supabase-client"
+import Link from "next/link"
+import { format } from "date-fns"
+import { Badge } from "@/components/ui/badge"
+
+type ApplicationListProps = {
+  applications: Application[]
+  isLoading: boolean
 }
 
 export function ApplicationList({ applications, isLoading }: ApplicationListProps) {
+  // Status badge configurations
+  const statusConfig = {
+    "Applied": {
+      icon: Clock,
+      variant: "default" as const,
+      color: "bg-blue-500/20 text-blue-500",
+    },
+    "Interviewing": {
+      icon: CalendarClock,
+      variant: "outline" as const,
+      color: "bg-yellow-500/20 text-yellow-500",
+    },
+    "Offer": {
+      icon: CheckCircle,
+      variant: "outline" as const,
+      color: "bg-green-500/20 text-green-500",
+    },
+    "Rejected": {
+      icon: XCircle, 
+      variant: "outline" as const,
+      color: "bg-red-500/20 text-red-500",
+    }
+  }
+
+  // Loading state
   if (isLoading) {
     return (
-      <div className="flex flex-col gap-4">
-        {Array.from({ length: 5 }).map((_, i) => (
-          <div key={i} className="animate-pulse h-24 bg-secondary/50 rounded-lg" />
-        ))}
+      <div className="flex justify-center items-center py-12">
+        <Loader2 className="h-8 w-8 animate-spin" />
       </div>
     )
   }
 
-  if (applications.length === 0) {
+  // Empty state
+  if (!applications || applications.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center p-8 text-center">
-        <h3 className="text-lg font-semibold mb-2">No applications found</h3>
-        <p className="text-muted-foreground mb-4">Start tracking your job applications!</p>
-        <Button asChild>
-          <Link href="/applications/new">Add Your First Application</Link>
-        </Button>
+      <div className="flex justify-center items-center flex-col py-12 text-center">
+        <p className="text-lg mb-2">No applications found</p>
+        <p className="text-muted-foreground mb-4">
+          Start your job search journey by adding your first application.
+        </p>
+        <Link href="/applications/new" className="text-primary hover:underline">
+          Add your first application
+        </Link>
       </div>
     )
   }
-
-  const getStatusColor = (status: Application['status']) => {
-    switch (status) {
-      case 'Applied':
-        return 'bg-blue-500/20 text-blue-500';
-      case 'Interviewing':
-        return 'bg-yellow-500/20 text-yellow-500';
-      case 'Offer':
-        return 'bg-green-500/20 text-green-500';
-      case 'Rejected':
-        return 'bg-red-500/20 text-red-500';
-      case 'Archived':
-        return 'bg-gray-500/20 text-gray-500';
-      default:
-        return 'bg-blue-500/20 text-blue-500';
-    }
-  };
 
   return (
-    <div className="flex flex-col gap-4">
-      {applications.map((application) => (
-        <Card key={application.id} className="flex flex-col sm:flex-row p-4 bg-secondary/30 border-none hover:bg-secondary/40 transition-colors">
-          <div className="flex-1">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-2">
-              <h3 className="font-semibold text-lg">{application.company_name}</h3>
-              <Badge className={`${getStatusColor(application.status)} self-start sm:self-auto`}>
-                {application.status}
-              </Badge>
+    <div className="space-y-4">
+      {applications.map((application) => {
+        const StatusIcon = application.status && statusConfig[application.status]?.icon || Clock;
+        const badgeColor = application.status && statusConfig[application.status]?.color || "";
+        
+        return (
+          <Link 
+            key={application.id} 
+            href={`/applications/${application.id}`}
+            className="block"
+          >
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-md bg-background/50 hover:bg-background/80 transition-colors border border-border/50">
+              <div className="mb-2 sm:mb-0">
+                <div className="flex items-center gap-2">
+                  <h3 className="font-medium">{application.company_name}</h3>
+                  <Badge className={badgeColor}>
+                    <StatusIcon className="h-3 w-3 mr-1" />
+                    {application.status}
+                  </Badge>
+                </div>
+                <p className="text-muted-foreground text-sm mt-1">{application.job_title}</p>
+              </div>
+              <div className="flex items-center gap-4">
+                <div className="text-sm text-muted-foreground">
+                  {application.application_date && format(new Date(application.application_date), "MMM d, yyyy")}
+                </div>
+                <div className="text-sm">
+                  {application.location}
+                </div>
+              </div>
             </div>
-            <p className="text-muted-foreground mb-2">{application.job_title}</p>
-            <div className="flex items-center text-xs text-muted-foreground">
-              <span>Applied {formatDistanceToNow(new Date(application.application_date), { addSuffix: true })}</span>
-              {application.location && (
-                <>
-                  <span className="mx-2">•</span>
-                  <span>{application.location}</span>
-                </>
-              )}
-            </div>
-          </div>
-          <div className="flex items-center gap-2 mt-4 sm:mt-0">
-            {application.job_url && (
-              <Button variant="outline" size="icon" asChild>
-                <a href={application.job_url} target="_blank" rel="noopener noreferrer">
-                  <ExternalLink className="h-4 w-4" />
-                </a>
-              </Button>
-            )}
-            <Button variant="outline" size="icon" asChild>
-              <Link href={`/applications/${application.id}`}>
-                <MoreHorizontal className="h-4 w-4" />
-              </Link>
-            </Button>
-          </div>
-        </Card>
-      ))}
+          </Link>
+        )
+      })}
     </div>
   )
 }
