@@ -62,7 +62,11 @@ export function ApplicationsGalaxy() {
         const speed = Number.parseFloat(star.getAttribute("data-speed") || "0.05")
         const offsetX = (x - 0.5) * speed * 50
         const offsetY = (y - 0.5) * speed * 50
-        star.setAttribute("style", `transform: translate(${offsetX}px, ${offsetY}px)`)
+        //star.setAttribute("style", `transform: translate(${offsetX}px, ${offsetY}px)`)
+       const currentTransform = (star as HTMLElement).style.transform || ""
+const cleanTransform = currentTransform.replace(/translate\([^)]+\)/, "")
+ ;(star as HTMLElement).style.transform = `${cleanTransform} translate(${offsetX}px, ${offsetY}px)`
+      
       })
     }
 
