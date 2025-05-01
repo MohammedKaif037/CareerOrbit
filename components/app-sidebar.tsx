@@ -1,4 +1,5 @@
 "use client"
+
 import {
   BarChart3,
   Home,
@@ -9,8 +10,8 @@ import {
   LogOut,
   Rocket,
   Table2,
-  Menu,
-  X,
+  ChevronRight, 
+  ChevronLeft,
 } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
@@ -91,14 +92,16 @@ export function AppSidebar() {
   return (
     <>
       {/* Mobile Toggle Button */}
-      <div className="md:hidden fixed top-4 left-4 z-50">
-        <button
-          onClick={() => setIsOpen(!isOpen)}
-          className="p-2 rounded-md bg-background/80 border border-white/10 backdrop-blur text-white"
-        >
-          {isOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-        </button>
-      </div>
+<div className="md:hidden fixed top-4 left-4 z-50">
+  <button
+    onClick={() => setIsOpen(!isOpen)}
+    className="p-2 rounded-md bg-background/80 border border-white/10 backdrop-blur text-white"
+    aria-label="Toggle Sidebar"
+  >
+    {isOpen ? <ChevronLeft className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
+  </button>
+</div>
+
 
       {/* Mobile Overlay */}
       {isOpen && (
