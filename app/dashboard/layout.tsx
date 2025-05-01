@@ -1,8 +1,7 @@
-'use client';
+"use client";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { AppSidebar } from "@/components/app-sidebar";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { supabase } from "@/lib/supabase-client";
 import { Loader2 } from "lucide-react";
@@ -47,15 +46,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen">
-        <AppSidebar />
-        <main className="flex-1 bg-gradient-to-b from-background to-background/80 relative overflow-hidden">
-          <div className="absolute inset-0 z-0">
-            <StarField />
-          </div>
-          <div className="relative z-10 h-full">{children}</div>
-        </main>
-      </div>
+      <main className="flex-1 bg-gradient-to-b from-background to-background/80 relative overflow-hidden">
+        <div className="absolute inset-0 z-0">
+          <StarField />
+        </div>
+        <div className="relative z-10 h-full">{children}</div>
+      </main>
     </SidebarProvider>
   );
 }
