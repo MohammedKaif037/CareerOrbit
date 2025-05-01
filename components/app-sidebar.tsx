@@ -1,5 +1,4 @@
 "use client"
-
 import {
   BarChart3,
   Home,
@@ -17,7 +16,6 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useState, useEffect } from "react"
 import { supabase } from "@/lib/supabase-client"
-
 import {
   Sidebar,
   SidebarContent,
@@ -31,7 +29,7 @@ import {
 
 export function AppSidebar() {
   const pathname = usePathname()
-  const [user, setUser] = useState<any>(null)
+  const [user, setUser] = useState(null)
   const [isOpen, setIsOpen] = useState(false)
 
   useEffect(() => {
@@ -39,7 +37,6 @@ export function AppSidebar() {
       const { data } = await supabase.auth.getUser()
       setUser(data.user)
     }
-
     getUser()
   }, [])
 
@@ -62,6 +59,13 @@ export function AppSidebar() {
     }
   }
 
+  // Close sidebar when clicking a link on mobile
+  const handleMobileNavigation = () => {
+    if (window.innerWidth < 768) {
+      setIsOpen(false)
+    }
+  }
+
   return (
     <>
       {/* Mobile Toggle Button */}
@@ -74,52 +78,67 @@ export function AppSidebar() {
         </button>
       </div>
 
+      {/* Mobile Overlay */}
+      {isOpen && (
+        <div 
+          className="md:hidden fixed inset-0 bg-black/50 z-30"
+          onClick={() => setIsOpen(false)}
+        />
+      )}
+
       {/* Sidebar Container */}
       <div
-        className={`fixed z-40 h-full transition-transform duration-300 bg-background md:static md:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-40 w-64 transition-transform duration-300 bg-background md:translate-x-0 md:static ${
           isOpen ? "translate-x-0" : "-translate-x-full"
-        } md:w-[260px] w-[80%] border-r border-white/10`}
+        } border-r border-white/10`}
       >
-        <Sidebar>
-          <SidebarHeader className="flex items-center justify-center py-6">
-            <Link href="/dashboard" className="flex items-center gap-2">
+        <div className="h-full flex flex-col">
+          <div className="flex items-center justify-center py-6">
+            <Link href="/dashboard" className="flex items-center gap-2" onClick={handleMobileNavigation}>
               <Rocket className="h-6 w-6 text-primary" />
               <span className="text-xl font-bold">Career Orbit</span>
             </Link>
-          </SidebarHeader>
-          <SidebarSeparator />
-          <SidebarContent>
-            <SidebarMenu>
+          </div>
+          
+          <div className="border-t border-white/10" />
+          
+          <nav className="flex-1 overflow-y-auto py-4">
+            <ul className="space-y-1 px-2">
               {menuItems.map((item) => (
-                <SidebarMenuItem key={item.href}>
-                  <SidebarMenuButton asChild isActive={pathname === item.href} tooltip={item.title}>
-                    <Link href={item.href}>
-                      <item.icon className="h-5 w-5" />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
+                <li key={item.href}>
+                  <Link 
+                    href={item.href}
+                    onClick={handleMobileNavigation}
+                    className={`flex items-center gap-3 px-3 py-2 rounded-md hover:bg-white/10 transition-colors ${
+                      pathname === item.href ? "bg-white/10 text-primary" : "text-foreground"
+                    }`}
+                  >
+                    <item.icon className="h-5 w-5" />
+                    <span>{item.title}</span>
+                  </Link>
+                </li>
               ))}
-            </SidebarMenu>
-          </SidebarContent>
-          <SidebarFooter>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild>
-                  <button className="w-full" onClick={handleSignOut}>
-                    <LogOut className="h-5 w-5" />
-                    <span>Logout</span>
-                  </button>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              {user && (
-                <div className="px-3 py-2 text-xs text-muted-foreground">
-                  Signed in as: {user.email}
-                </div>
-              )}
-            </SidebarMenu>
-          </SidebarFooter>
-        </Sidebar>
+            </ul>
+          </nav>
+          
+          <div className="border-t border-white/10 mt-auto" />
+          
+          <div className="p-4">
+            <button 
+              className="flex items-center gap-3 w-full px-3 py-2 rounded-md hover:bg-white/10 transition-colors"
+              onClick={handleSignOut}
+            >
+              <LogOut className="h-5 w-5" />
+              <span>Logout</span>
+            </button>
+            
+            {user && (
+              <div className="px-3 py-2 mt-2 text-xs text-muted-foreground">
+                Signed in as: {user.email}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </>
   )
