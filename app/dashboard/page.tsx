@@ -17,6 +17,7 @@ export default function Dashboard() {
     interviews: 0,
     offers: 0,
   })
+  const [upcomingInterviews, setUpcomingInterviews] = useState(0)
   const [userId, setUserId] = useState<string | null>(null)
 
   useEffect(() => {
@@ -39,6 +40,9 @@ export default function Dashboard() {
               offers: statsData.offer || 0,
             })
           }
+          
+          // Get upcoming interviews count
+          await fetchUpcomingInterviews(userData.user.id)
         }
       } catch (error) {
         console.error("Error loading user and stats:", error)
@@ -49,12 +53,35 @@ export default function Dashboard() {
 
     loadUserAndStats()
   }, [])
+  
+  // Function to fetch upcoming interviews
+  async function fetchUpcomingInterviews(userId) {
+    try {
+      const now = new Date().toISOString()
+      
+      const { data, error } = await supabase
+        .from("interview_events")
+        .select("id")
+        .eq("user_id", userId)
+        .gte("scheduled_time", now)
+        
+      if (error) {
+        console.error("Error fetching upcoming interviews:", error)
+        return
+      }
+      
+      setUpcomingInterviews(data?.length || 0)
+    } catch (error) {
+      console.error("Error in fetchUpcomingInterviews:", error)
+    }
+  }
 
   // Set up real-time subscription for updates
   useEffect(() => {
     if (!userId) return
 
-    const subscription = supabase
+    // Subscribe to applications changes
+    const applicationsSubscription = supabase
       .channel('applications-changes')
       .on(
         'postgres_changes',
@@ -80,10 +107,29 @@ export default function Dashboard() {
         }
       )
       .subscribe()
+      
+    // Subscribe to interview events changes
+    const interviewsSubscription = supabase
+      .channel('interviews-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'interview_events',
+          filter: `user_id=eq.${userId}`,
+        },
+        async () => {
+          // Refresh upcoming interviews count when interview data changes
+          await fetchUpcomingInterviews(userId)
+        }
+      )
+      .subscribe()
 
-    // Cleanup subscription when component unmounts
+    // Cleanup subscriptions when component unmounts
     return () => {
-      supabase.removeChannel(subscription)
+      supabase.removeChannel(applicationsSubscription)
+      supabase.removeChannel(interviewsSubscription)
     }
   }, [userId])
 
@@ -140,7 +186,7 @@ export default function Dashboard() {
             <CardDescription>Your next missions</CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-4xl font-bold">{stats.interviews}</p>
+            <p className="text-4xl font-bold">{upcomingInterviews}</p>
           </CardContent>
         </Card>
         <Card className="glass-card cosmic-glow-green">
