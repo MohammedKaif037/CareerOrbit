@@ -87,14 +87,18 @@ export function StatusSummary() {
               ))}
             </Pie>
             <Tooltip
-              formatter={(value, name) => [`${value} Applications`, name]}
-              contentStyle={{
-                backgroundColor: "rgba(0, 0, 0, 0.8)",
-                borderRadius: "0.5rem",
-                color: "#fff",
-                fontSize: "12px",
-              }}
-            />
+  formatter={(value, name) => [`${value} Applications`, name]}
+  contentStyle={{
+    backgroundColor: "rgba(0, 0, 0, 0.8)",
+    borderRadius: "0.5rem",
+    color: "#fff", // <-- this sets text color to white
+    fontSize: "12px",
+  }}
+  itemStyle={{
+    color: "#fff", // <-- ensures each tooltip item text is white
+  }}
+/>
+            
           </PieChart>
         </ResponsiveContainer>
       </div>
