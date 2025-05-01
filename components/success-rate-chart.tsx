@@ -1,41 +1,72 @@
 "use client"
 
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts"
-
-const data = [
-  {
-    name: "Job Board",
-    applications: 20,
-    interviews: 5,
-    offers: 1,
-  },
-  {
-    name: "Company Website",
-    applications: 15,
-    interviews: 6,
-    offers: 1,
-  },
-  {
-    name: "Referral",
-    applications: 7,
-    interviews: 5,
-    offers: 2,
-  },
-  {
-    name: "Recruiter",
-    applications: 5,
-    interviews: 3,
-    offers: 1,
-  },
-  {
-    name: "LinkedIn",
-    applications: 10,
-    interviews: 2,
-    offers: 0,
-  },
-]
+import { useEffect, useState } from "react"
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
+} from "recharts"
+import { supabase } from "@/lib/supabase-client"
+import { Loader2 } from "lucide-react"
 
 export function SuccessRateChart() {
+  const [data, setData] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function fetchData() {
+      const { data: userData } = await supabase.auth.getUser()
+      const userId = userData?.user?.id
+      if (!userId) return
+
+      // Fetch all applications for the user
+      const { data: apps, error } = await supabase
+        .from("applications")
+        .select("application_method, status")
+        .eq("user_id", userId)
+
+      if (error || !apps) return
+
+      // Aggregate counts
+      const methodStats: Record<string, { applications: number; interviews: number; offers: number }> = {}
+
+      for (const app of apps) {
+        const method = app.application_method || "Other"
+        if (!methodStats[method]) {
+          methodStats[method] = { applications: 0, interviews: 0, offers: 0 }
+        }
+
+        methodStats[method].applications += 1
+
+        if (app.status === "Interviewing") methodStats[method].interviews += 1
+        if (app.status === "Offer") methodStats[method].offers += 1
+      }
+
+      const chartData = Object.entries(methodStats).map(([name, values]) => ({
+        name,
+        ...values,
+      }))
+
+      setData(chartData)
+      setLoading(false)
+    }
+
+    fetchData()
+  }, [])
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-[200px]">
+        <Loader2 className="h-5 w-5 animate-spin" />
+      </div>
+    )
+  }
+
   return (
     <ResponsiveContainer width="100%" height="100%">
       <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
@@ -48,6 +79,7 @@ export function SuccessRateChart() {
             borderColor: "rgba(255, 255, 255, 0.1)",
             borderRadius: "0.5rem",
             boxShadow: "0 0 10px rgba(56, 189, 248, 0.3)",
+            color: "white",
           }}
         />
         <Legend
