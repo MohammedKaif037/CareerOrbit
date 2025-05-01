@@ -59,12 +59,34 @@ export function AppSidebar() {
     }
   }
 
-  // Close sidebar when clicking a link on mobile
+  // Only close sidebar when clicking a link on mobile
+  // For desktop, sidebar should remain visible
   const handleMobileNavigation = () => {
     if (window.innerWidth < 768) {
       setIsOpen(false)
     }
   }
+  
+  // This ensures the sidebar remains visible in desktop view
+  useEffect(() => {
+    // Set initial state based on screen size
+    const handleResize = () => {
+      if (window.innerWidth >= 768) {
+        setIsOpen(true)
+      }
+    }
+    
+    // Set correct initial state on mount
+    handleResize()
+    
+    // Add event listener for resize
+    window.addEventListener('resize', handleResize)
+    
+    // Clean up event listener
+    return () => {
+      window.removeEventListener('resize', handleResize)
+    }
+  }, [])
 
   return (
     <>
@@ -91,6 +113,8 @@ export function AppSidebar() {
         className={`fixed inset-y-0 left-0 z-40 w-64 transition-transform duration-300 bg-background md:translate-x-0 md:static ${
           isOpen ? "translate-x-0" : "-translate-x-full"
         } border-r border-white/10`}
+        // Add a key to ensure the component preserves its state across renders
+        key="app-sidebar"
       >
         <div className="h-full flex flex-col">
           <div className="flex items-center justify-center py-6">
