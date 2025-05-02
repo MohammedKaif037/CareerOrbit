@@ -148,20 +148,21 @@ export default function Dashboard() {
           <h1 className="text-4xl font-bold tracking-tight">Mission Control</h1>
           <p className="text-muted-foreground">Track your job applications journey through the cosmos</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" asChild className="gap-2">
-            <Link href="/your-applications">
-              <Table2 className="h-5 w-5" />
-              View Spreadsheet
-            </Link>
-          </Button>
-          <Button asChild size="lg" className="gap-2">
-            <Link href="/applications/new">
-              <PlusCircle className="h-5 w-5" />
-              Launch New Application
-            </Link>
-          </Button>
-        </div>
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+  <Button variant="outline" asChild className="gap-2 w-full sm:w-auto">
+    <Link href="/your-applications">
+      <Table2 className="h-5 w-5" />
+      View Spreadsheet
+    </Link>
+  </Button>
+  <Button asChild size="lg" className="gap-2 w-full sm:w-auto">
+    <Link href="/applications/new">
+      <PlusCircle className="h-5 w-5" />
+      Launch New Application
+    </Link>
+  </Button>
+</div>
+
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
