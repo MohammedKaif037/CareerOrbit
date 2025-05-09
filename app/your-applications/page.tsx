@@ -8,7 +8,7 @@ import { ApplicationFilters } from "@/components/application-filters"
 import { Input } from "@/components/ui/input"
 import { Suspense } from "react"
 
-//Add Fn to Export to XLSX
+//Add Fn to Export to CSV
 export default function YourApplications() {
   return (
     <div className="container mx-auto p-6 space-y-8">
