@@ -1,5 +1,4 @@
 "use client"
-//TODO impl
 import { useEffect, useState } from "react"
 import { Calendar } from "@/components/ui/calendar"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -7,68 +6,99 @@ import { Badge } from "@/components/ui/badge"
 import { Clock, MapPin, Video } from "lucide-react"
 import { supabase } from "@/lib/supabase-client"
 
+// Enhanced type definitions
+type Application = {
+  id: string;
+  company_name: string;
+  job_title: string;
+}
+
+type InterviewEvent = {
+  id: string;
+  application_id: string;
+  event_type: 'video' | 'onsite';
+  scheduled_time: string;
+  duration_minutes: number;
+  interviewers?: string[];
+  notes?: string | null;
+  user_id: string;
+  location?: string | null;
+  meeting_url?: string | null;
+  application?: Application;  // Optional application details
+}
+
 export function InterviewCalendar() {
   const [date, setDate] = useState<Date | undefined>(new Date())
-  const [interviews, setInterviews] = useState<any[]>([])
-  const [selectedInterview, setSelectedInterview] = useState<any | null>(null)
+  const [interviews, setInterviews] = useState<InterviewEvent[]>([])
+  const [selectedInterview, setSelectedInterview] = useState<InterviewEvent | null>(null)
   const [debugInfo, setDebugInfo] = useState<any>(null)
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     async function fetchInterviews() {
-      // Fetch the current user
-      const { data: userData, error: userError } = await supabase.auth.getUser()
-      
-      if (userError) {
-        console.error("Error fetching user:", userError)
-        setDebugInfo({ type: "auth_error", error: userError })
-        return
-      }
-      
-      if (!userData?.user) {
-        console.log("No user found")
-        setDebugInfo({ type: "no_user" })
-        return
-      }
-      
-      console.log("Current user ID:", userData.user.id)
-      
-      // Fetch all interviews to check if there are any in the database
-      const { data: allData, error: allError } = await supabase
-        .from("interview_events")
-        .select("*")
-      
-      if (allError) {
-        console.error("Error fetching all interviews:", allError)
-        setDebugInfo({ type: "all_query_error", error: allError })
-        return
-      }
-      
-      console.log("All interviews in DB:", allData)
-      
-      // Fetch only this user's interviews
-      const { data, error } = await supabase
-        .from("interview_events")
-        .select("*")
-        .eq("user_id", userData.user.id)
-        .order("scheduled_time", { ascending: true })
+      setIsLoading(true)
+      try {
+        // Get current user
+        const { data: userData, error: userError } = await supabase.auth.getUser()
 
-      if (error) {
-        console.error("Error fetching user interviews:", error)
+        if (userError || !userData?.user) {
+          console.error("Authentication error:", userError)
+          setDebugInfo({ 
+            type: "auth_error", 
+            error: userError,
+            message: "Unable to fetch user" 
+          })
+          setIsLoading(false)
+          return
+        }
+
+        // Fetch interviews with full application details
+        const { data, error } = await supabase
+          .from("interview_events")
+          .select(`
+            *,
+            applications (
+              id,
+              company_name,
+              job_title
+            )
+          `)
+          .eq("user_id", userData.user.id)
+          .order("scheduled_time", { ascending: true })
+
+        if (error) {
+          console.error("Error fetching interviews:", error)
+          setDebugInfo({ 
+            type: "query_error", 
+            error,
+            userId: userData.user.id 
+          })
+        } else {
+          // Transform data to include application details
+          const transformedInterviews = data.map(item => ({
+            ...item,
+            application: item.applications,  // Add application details
+            location: item.location || 'Not specified',
+            company_name: item.applications?.company_name || 'Unknown Company',
+            job_title: item.applications?.job_title || 'Unknown Job'
+          }))
+
+          console.log("Interviews found:", transformedInterviews)
+          setInterviews(transformedInterviews)
+          setDebugInfo({ 
+            type: "success", 
+            count: transformedInterviews.length,
+            userId: userData.user.id 
+          })
+        }
+      } catch (err) {
+        console.error("Unexpected error:", err)
         setDebugInfo({ 
-          type: "user_query_error", 
-          error, 
-          userId: userData.user.id,
-          allInterviews: allData
+          type: "unexpected_error", 
+          error: err 
         })
-      } else {
-        console.log("User interviews found:", data)
-        setInterviews(data || [])
-        setDebugInfo({ 
-          type: "success", 
-          count: data?.length || 0,
-          userId: userData.user.id,
-          allInterviews: allData
-        })
+      } finally {
+        setIsLoading(false)
       }
     }
 
@@ -78,55 +108,35 @@ export function InterviewCalendar() {
   const getInterviewsForDate = (date: Date | undefined) => {
     if (!date) return []
 
-    const matchingInterviews = interviews.filter((interview) => {
-      // Handle potentially invalid date strings
+    return interviews.filter((interview) => {
       try {
         const interviewDate = new Date(interview.scheduled_time)
         
-        // Check if the date is valid
-        if (isNaN(interviewDate.getTime())) {
-          console.error("Invalid date format:", interview.scheduled_time)
-          return false
-        }
-        
-        const dateMatches = (
+        return (
           interviewDate.getDate() === date.getDate() &&
           interviewDate.getMonth() === date.getMonth() &&
           interviewDate.getFullYear() === date.getFullYear()
         )
-        
-        if (dateMatches) {
-          console.log("Found matching interview for selected date:", interview)
-        }
-        
-        return dateMatches
       } catch (err) {
         console.error("Error processing date:", err)
         return false
       }
     })
-    
-    console.log(`Found ${matchingInterviews.length} interviews for ${date.toDateString()}`)
-    return matchingInterviews
   }
 
-  const formatTime = (date: Date) => {
-    // Check for invalid date
-    if (isNaN(date.getTime())) {
+  const formatTime = (dateString: string) => {
+    try {
+      const date = new Date(dateString)
+      return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+    } catch (err) {
       return "Invalid time"
     }
-    return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
   }
 
   const isDayWithInterview = (day: Date) => {
     return interviews.some((interview) => {
       try {
         const interviewDate = new Date(interview.scheduled_time)
-        // Check if the date is valid
-        if (isNaN(interviewDate.getTime())) {
-          return false
-        }
-        
         return (
           interviewDate.getDate() === day.getDate() &&
           interviewDate.getMonth() === day.getMonth() &&
@@ -140,9 +150,12 @@ export function InterviewCalendar() {
 
   const interviewsForDate = getInterviewsForDate(date)
 
+  if (isLoading) {
+    return <div>Loading interviews...</div>
+  }
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      {/* Debug info panel - remove in production */}
       {debugInfo && (
         <div className="col-span-2 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-md mb-4">
           <h3 className="text-lg font-bold mb-2">Debug Info</h3>
@@ -151,7 +164,7 @@ export function InterviewCalendar() {
           </pre>
         </div>
       )}
-      
+
       <div>
         <Calendar
           mode="single"
@@ -187,14 +200,19 @@ export function InterviewCalendar() {
                 onClick={() => setSelectedInterview(interview)}
               >
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-lg">{interview.company || "Interview"}</CardTitle>
-                  <CardDescription>{interview.notes || interview.event_type}</CardDescription>
+                  <CardTitle className="text-lg">
+                    {interview.application?.company_name || 'Unknown Company'}
+                  </CardTitle>
+                  <CardDescription>
+                    {interview.application?.job_title || 'Unknown Job'}
+                    {interview.notes ? ` - ${interview.notes}` : ''}
+                  </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-2">
                   <div className="flex items-center gap-2 text-sm">
                     <Clock className="h-4 w-4 text-yellow-400" />
                     <span>
-                      {formatTime(new Date(interview.scheduled_time))} ({interview.duration_minutes} min)
+                      {formatTime(interview.scheduled_time)} ({interview.duration_minutes} min)
                     </span>
                   </div>
 
@@ -230,7 +248,8 @@ export function InterviewCalendar() {
             <CardHeader>
               <CardTitle>Interview Details</CardTitle>
               <CardDescription>
-                {selectedInterview.company || "Interview"} - {selectedInterview.notes || selectedInterview.event_type}
+                {selectedInterview.application?.company_name || 'Unknown Company'} - 
+                {selectedInterview.application?.job_title || 'Unknown Job'}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -239,7 +258,7 @@ export function InterviewCalendar() {
                 <p>
                   {new Date(selectedInterview.scheduled_time).toLocaleString(undefined, {
                     weekday: "long",
-                    month: "long",
+                    month: "long", 
                     day: "numeric",
                     year: "numeric",
                     hour: "2-digit",
@@ -253,7 +272,7 @@ export function InterviewCalendar() {
                 <div>
                   <h4 className="font-medium">Meeting Link</h4>
                   <p className="text-primary underline">
-                    <a href={selectedInterview.meeting_url} target="_blank" rel="noopener noreferrer">
+                    <a href={selectedInterview.meeting_url || '#'} target="_blank" rel="noopener noreferrer">
                       {selectedInterview.meeting_url || "No meeting link provided"}
                     </a>
                   </p>
@@ -269,8 +288,8 @@ export function InterviewCalendar() {
                 <h4 className="font-medium">Interviewers</h4>
                 {selectedInterview.interviewers && selectedInterview.interviewers.length > 0 ? (
                   <ul className="list-disc list-inside">
-                    {selectedInterview.interviewers.map((i: string, index: number) => (
-                      <li key={index}>{i}</li>
+                    {selectedInterview.interviewers.map((interviewer: string, index: number) => (
+                      <li key={index}>{interviewer}</li>
                     ))}
                   </ul>
                 ) : (
@@ -283,4 +302,4 @@ export function InterviewCalendar() {
       </div>
     </div>
   )
-}
+                    }
