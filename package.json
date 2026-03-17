@@ -61,7 +61,7 @@
     "@emotion/is-prop-valid": "latest",
     "framer-motion": "latest",
     "@supabase/supabase-js": "latest",
-    "@supabase/auth-helpers-nextjs": "latest"
+    "@supabase/ssr": "latest"
   },
   "devDependencies": {
     "@types/node": "^22",
