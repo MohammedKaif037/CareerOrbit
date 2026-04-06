@@ -5,6 +5,8 @@ import { Application } from "@/lib/supabase-client"
 import Link from "next/link"
 import { format } from "date-fns"
 import { Badge } from "@/components/ui/badge"
+import { QuickStatusUpdate } from "@/components/quick-status-update"
+
 
 type ApplicationListProps = {
   applications: Application[]
@@ -81,10 +83,10 @@ export function ApplicationList({ applications, isLoading }: ApplicationListProp
               <div className="mb-2 sm:mb-0">
                 <div className="flex items-center gap-2">
                   <h3 className="font-medium">{application.company_name}</h3>
-                  <Badge className={badgeColor}>
-                    <StatusIcon className="h-3 w-3 mr-1" />
-                    {application.status}
-                  </Badge>
+                  <QuickStatusUpdate
+                    applicationId={application.id}
+                    currentStatus={application.status}
+                  />
                 </div>
                 <p className="text-muted-foreground text-sm mt-1">{application.job_title}</p>
               </div>
