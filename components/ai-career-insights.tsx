@@ -91,6 +91,44 @@ ${stats.avgResponseDays ? `- Avg days to follow-up: ${stats.avgResponseDays}` : 
 Using this data, give specific, actionable, data-driven career advice. Point out patterns, suggest improvements, and be encouraging. Keep responses concise and use bullet points where helpful. Reference their actual numbers when relevant.`
 }
 
+function renderInline(text: string): React.ReactNode[] {
+  return text.split(/(\*\*[^*]+\*\*)/).map((part, i) => {
+    if (part.startsWith("**") && part.endsWith("**")) {
+      return <strong key={i} className="text-white font-semibold">{part.slice(2, -2)}</strong>
+    }
+    return part
+  })
+}
+
+function renderMarkdown(text: string): React.ReactNode[] {
+  return text.split("\n").map((line, i) => {
+    if (line.trim() === "") return <div key={i} className="h-1" />
+
+    if (line.match(/^#{1,3}\s/)) {
+      return <p key={i} className="font-semibold text-green-300 mt-2 mb-0.5">{renderInline(line.replace(/^#{1,3}\s/, ""))}</p>
+    }
+    if (line.match(/^\s*[-*]\s/)) {
+      const indented = (line.match(/^(\s+)/)?.[1].length || 0) > 0
+      return (
+        <div key={i} className={`flex items-start gap-2 ${indented ? "ml-4" : ""}`}>
+          <span className="text-green-400 mt-0.5 shrink-0 text-xs">•</span>
+          <span>{renderInline(line.replace(/^\s*[-*]\s/, ""))}</span>
+        </div>
+      )
+    }
+    if (line.match(/^\s*\d+\.\s/)) {
+      const num = line.match(/^\s*(\d+)\./)?.[1]
+      return (
+        <div key={i} className="flex items-start gap-2">
+          <span className="text-green-400 shrink-0 font-medium text-xs">{num}.</span>
+          <span>{renderInline(line.replace(/^\s*\d+\.\s/, ""))}</span>
+        </div>
+      )
+    }
+    return <p key={i}>{renderInline(line)}</p>
+  })
+}
+
 const SUGGESTED_PROMPTS = [
   "How is my job search going overall?",
   "Which application method is working best for me?",
@@ -268,13 +306,13 @@ export function AiCareerInsights() {
                 )}
               </div>
               <div
-                className={`px-4 py-3 rounded-lg text-sm max-w-[85%] whitespace-pre-wrap leading-relaxed ${
+                className={`px-4 py-3 rounded-lg text-sm max-w-[85%] leading-relaxed space-y-0.5 ${
                   msg.role === "user"
                     ? "bg-green-600/20 border border-green-500/30 text-white rounded-tr-none"
                     : "bg-green-900/30 border border-green-300/20 text-green-100/80 rounded-tl-none"
                 }`}
               >
-                {msg.content}
+                {msg.role === "assistant" ? renderMarkdown(msg.content) : msg.content}
               </div>
             </motion.div>
           ))}
