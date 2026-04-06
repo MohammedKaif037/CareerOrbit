@@ -33,7 +33,7 @@ type Application = {
   follow_up_required: boolean
   follow_up_date: string | null
   notes: string | null
-  status: "Applied" | "Interviewing" | "Offer" | "Rejected"
+  status: "Applied" | "Interviewing" | "Offer" | "Rejected" | "Ghosted"
   job_url: string | null
   salary_range: string | null
   location: string | null
@@ -156,7 +156,7 @@ export default function EditApplicationPage() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="bg-green-950 border-green-300/30 text-white">
-                {["Applied", "Interviewing", "Offer", "Rejected"].map((s) => (
+                {["Applied", "Interviewing", "Offer", "Rejected", "Ghosted"].map((s) => (
                   <SelectItem key={s} value={s}>
                     {s}
                   </SelectItem>
