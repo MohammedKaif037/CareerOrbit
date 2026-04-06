@@ -19,6 +19,7 @@ import {
   CheckCircle,
   Clock,
   XCircle,
+  Ghost,
   MapPin,
   DollarSign,
   User,
@@ -41,7 +42,7 @@ type Application = {
   follow_up_required: boolean
   follow_up_date: string | null
   notes: string | null
-  status: "Applied" | "Interviewing" | "Offer" | "Rejected"
+  status: "Applied" | "Interviewing" | "Offer" | "Rejected" | "Ghosted"
   job_url: string | null
   salary_range: string | null
   location: string | null
@@ -52,7 +53,7 @@ const statusConfig = {
   Applied: { icon: Clock, color: "bg-blue-500/20 text-blue-400 border-blue-500/30" },
   Interviewing: { icon: CalendarClock, color: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30" },
   Offer: { icon: CheckCircle, color: "bg-green-500/20 text-green-400 border-green-500/30" },
-  Rejected: { icon: XCircle, color: "bg-red-500/20 text-red-400 border-red-500/30" },
+  Ghosted: { icon: Ghost, color: "bg-gray-500/20 text-gray-400 border-gray-500/30" },
 }
 
 export default function ApplicationDetailPage() {
