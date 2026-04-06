@@ -262,6 +262,7 @@ export default function NewApplication() {
                       <SelectItem value="Indeed">Indeed</SelectItem>
                       <SelectItem value="Referral">Referral</SelectItem>
                       <SelectItem value="Recruiter">Recruiter</SelectItem>
+                      <SelectItem value="Other">Naukri</SelectItem>
                       <SelectItem value="Other">Other</SelectItem>
                     </SelectContent>
                   </Select>
