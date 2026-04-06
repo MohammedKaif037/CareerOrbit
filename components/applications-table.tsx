@@ -26,7 +26,7 @@ type Application = {
   follow_up_required: boolean
   follow_up_date: string | null
   notes: string | null
-  status: "Applied" | "Interviewing" | "Offer" | "Rejected"
+  status: "Applied" | "Interviewing" | "Offer" | "Rejected" | "Ghosted"
   job_url: string | null
   salary_range: string | null
   location: string | null
@@ -266,6 +266,8 @@ export function ApplicationsTable() {
         return <Badge className="bg-green-500 hover:bg-green-600">{status}</Badge>
       case "Rejected":
         return <Badge className="bg-red-500 hover:bg-red-600">{status}</Badge>
+      case "Ghosted":
+        return <Badge className="bg-gray-500 hover:bg-gray-600">{status}</Badge>
       default:
         return <Badge variant="outline">{status}</Badge>
     }
