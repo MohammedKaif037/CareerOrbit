@@ -10,6 +10,9 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { MoreHorizontal, ExternalLink, Edit, Trash2, Copy, Star, Download, ArrowUpDown } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { motion } from "framer-motion"
+import { QuickStatusUpdate } from "@/components/quick-status-update"
+
+
 
 // Define the application type based on the schema
 type Application = {
