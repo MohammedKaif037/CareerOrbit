@@ -1,6 +1,6 @@
 "use client"
 
-import { CalendarClock, CheckCircle, Clock, XCircle, Loader2 } from "lucide-react"
+import { CalendarClock, CheckCircle, Clock, XCircle, Loader2, Ghost } from "lucide-react"
 import { Application } from "@/lib/supabase-client"
 import Link from "next/link"
 import { format } from "date-fns"
@@ -33,7 +33,12 @@ export function ApplicationList({ applications, isLoading }: ApplicationListProp
       icon: XCircle, 
       variant: "outline" as const,
       color: "bg-red-500/20 text-red-500",
-    }
+    },
+    "Ghosted": {
+  icon: Ghost,  // import Ghost from lucide-react
+  variant: "outline" as const,
+  color: "bg-gray-500/20 text-gray-400",
+},
   }
 
   // Loading state
