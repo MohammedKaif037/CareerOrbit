@@ -534,7 +534,13 @@ export function ApplicationsTable() {
                         className={app.interview_scheduled ? "bg-green-500 border-green-500" : ""}
                       />
                     </td>
-                    <td className="whitespace-nowrap px-3 py-4 text-sm">{getStatusBadge(app.status)}</td>
+                    <td className="whitespace-nowrap px-3 py-4 text-sm"><QuickStatusUpdate
+                      applicationId={app.id}
+                      currentStatus={app.status}
+                      onUpdated={(s) => setApplications(prev =>
+                        prev.map(a => a.id === app.id ? { ...a, status: s } : a)
+                      )}
+                    /></td>
                     <td className="whitespace-nowrap px-3 py-4 text-sm">{app.location || "-"}</td>
                     <td className="whitespace-nowrap px-3 py-4 text-sm">{getPriorityStars(app.priority)}</td>
                     <td className="whitespace-nowrap px-3 py-4 text-sm">
