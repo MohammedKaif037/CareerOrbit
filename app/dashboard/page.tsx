@@ -9,6 +9,7 @@ import { ApplicationsGalaxy } from "@/components/applications-galaxy"
 import { StatusSummary } from "@/components/status-summary"
 import { RecentActivity } from "@/components/recent-activity"
 import { supabase } from "@/lib/supabase-client"
+import { QuickAddApplication } from "@/components/quick-add-application"
 
 export default function Dashboard() {
   const [isLoading, setIsLoading] = useState(true)
@@ -155,12 +156,15 @@ export default function Dashboard() {
       View Spreadsheet
     </Link>
   </Button>
+<div className="flex items-center gap-2">
   <Button asChild size="lg" className="gap-2 w-full sm:w-auto">
     <Link href="/applications/new">
       <PlusCircle className="h-5 w-5" />
       Launch New Application
     </Link>
   </Button>
+  <QuickAddApplication onAdded={() => router.refresh()} />
+</div>
 </div>
 
       </div>
