@@ -4,11 +4,10 @@ export async function generateFollowUpAction(prompt: string) {
   const apiKey = process.env.GEMINI_API_KEY;
 
   if (!apiKey) {
-    throw new Error("API Key is not configured in Netlify environment variables.");
+    throw new Error("API Key not found in server environment.");
   }
 
-  // Updated model name to gemini-1.5-flash-latest to match v1beta requirements
- const res = await fetch(
+  const res = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`,
     {
       method: "POST",
@@ -17,7 +16,9 @@ export async function generateFollowUpAction(prompt: string) {
         contents: [{ parts: [{ text: prompt }] }],
         generationConfig: { 
           temperature: 0.7, 
-          maxOutputTokens: 400,
+          // We increase this to 1000 so it never stops mid-sentence.
+          // Your prompt already asks for <120 words, so it will still be short.
+          maxOutputTokens: 1000, 
           topP: 0.95 
         },
       }),
@@ -27,7 +28,6 @@ export async function generateFollowUpAction(prompt: string) {
   if (!res.ok) {
     const errorData = await res.json();
     console.error("Gemini API Error:", errorData);
-    // This message will now be logged properly in Netlify Functions
     throw new Error(errorData.error?.message || "Failed to connect to Gemini API");
   }
 
