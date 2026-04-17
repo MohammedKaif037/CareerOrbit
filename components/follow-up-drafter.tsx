@@ -53,14 +53,19 @@ export function FollowUpDrafter() {
   }, [])
 
   const generateDraft = async (app: Application) => {
-    setDrafts(prev => ({ ...prev, [app.id]: { status: "loading", email: "", error: "" } }))
-    setExpanded(app.id)
+  // 1. Set UI to loading state
+  setDrafts((prev) => ({
+    ...prev,
+    [app.id]: { status: "loading", email: "", error: "" },
+  }));
+  setExpanded(app.id);
 
-    const daysSince = Math.floor(
-      (Date.now() - new Date(app.application_date).getTime()) / (1000 * 60 * 60 * 24)
-    )
+  // 2. Calculate logic for the prompt
+  const daysSince = Math.floor(
+    (Date.now() - new Date(app.application_date).getTime()) / (1000 * 60 * 60 * 24)
+  );
 
-    const prompt = `Write a concise, professional follow-up email for a job application with these details:
+  const prompt = `Write a concise, professional follow-up email for a job application:
 - Role: ${app.job_title}
 - Company: ${app.company_name}
 - Applied via: ${app.application_method}
@@ -70,40 +75,34 @@ ${app.notes ? `- Notes: ${app.notes}` : ""}
 
 Requirements:
 - Subject line on the first line starting with "Subject: "
-- Then a blank line
-- Then the email body
 - Keep it under 120 words
 - Friendly but professional tone
 - Express continued interest and ask about next steps
-- Do NOT use placeholder brackets like [Your Name] — use "I" and leave signature as just a line break
-- No markdown formatting, plain text only`
+- Use "I" and leave a placeholder for the signature
+- Plain text only, no markdown.`;
 
-    try {
-      const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.NEXT_PUBLIC_GEMINI_API_KEY}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: { temperature: 0.7, maxOutputTokens: 300 },
-          }),
-        }
-      )
+  try {
+    // 3. Call the Server Action
+    const emailText = await generateFollowUpAction(prompt);
 
-      const data = await res.json()
-      const text = data?.candidates?.[0]?.content?.parts?.[0]?.text
-
-      if (!text) throw new Error("No response from Gemini")
-
-      setDrafts(prev => ({ ...prev, [app.id]: { status: "done", email: text.trim(), error: "" } }))
-    } catch (err) {
-      setDrafts(prev => ({
-        ...prev,
-        [app.id]: { status: "error", email: "", error: "Failed to generate. Check your Gemini API key." },
-      }))
-    }
+    // 4. Update UI with the result
+    setDrafts((prev) => ({
+      ...prev,
+      [app.id]: { status: "done", email: emailText, error: "" },
+    }));
+  } catch (err: any) {
+    // 5. Handle any errors (API down, key missing, etc.)
+    console.error("Drafting Error:", err);
+    setDrafts((prev) => ({
+      ...prev,
+      [app.id]: {
+        status: "error",
+        email: "",
+        error: err.message || "Failed to generate. Please try again later.",
+      },
+    }));
   }
+};
 
   const copyToClipboard = async (id: string, text: string) => {
     await navigator.clipboard.writeText(text)
