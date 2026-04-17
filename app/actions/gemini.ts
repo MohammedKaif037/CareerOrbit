@@ -8,8 +8,8 @@ export async function generateFollowUpAction(prompt: string) {
   }
 
   // Updated model name to gemini-1.5-flash-latest to match v1beta requirements
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`,
+ const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
