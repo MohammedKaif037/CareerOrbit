@@ -1,5 +1,6 @@
 "use client"
 
+import { generateFollowUpAction } from "@/app/actions/gemini";
 import { useState, useEffect } from "react"
 import { supabase } from "@/lib/supabase-client"
 import { motion, AnimatePresence } from "framer-motion"
