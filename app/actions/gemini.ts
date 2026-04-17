@@ -1,10 +1,10 @@
 "use server";
 
 export async function generateFollowUpAction(prompt: string) {
-  const apiKey = process.env.GEMINI_API_KEY; 
-  
+   const apiKey = process.env.GEMINI_API_KEY;
+
   if (!apiKey) {
-    throw new Error("API Key not configured on server");
+    throw new Error("API Key is not configured in Netlify environment variables.");
   }
 
   const res = await fetch(
@@ -14,17 +14,27 @@ export async function generateFollowUpAction(prompt: string) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.7, maxOutputTokens: 300 },
+        generationConfig: { 
+          temperature: 0.7, 
+          maxOutputTokens: 400,
+          topP: 0.95 
+        },
       }),
     }
   );
 
-  const data = await res.json();
-
   if (!res.ok) {
-    console.error("Gemini Error:", data);
-    throw new Error(data.error?.message || "Failed to generate content");
+    const errorData = await res.json();
+    console.error("Gemini API Error:", errorData);
+    throw new Error(errorData.error?.message || "Failed to connect to Gemini API");
   }
 
-  return data.candidates?.[0]?.content?.parts?.[0]?.text;
+  const data = await res.json();
+  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+  if (!text) {
+    throw new Error("Gemini returned an empty response.");
+  }
+
+  return text.trim();
 }
