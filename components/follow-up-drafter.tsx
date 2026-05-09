@@ -41,17 +41,23 @@ export function FollowUpDrafter() {
       const userId = userData?.user?.id
       if (!userId) return
 
-      // Fetch the user's saved full name from profiles
-      const { data: profileData } = await supabase
+      // 1. Try auth metadata first — always works, no extra table needed
+      const meta = userData.user?.user_metadata
+      const metaName = meta?.full_name || meta?.name || ""
+      if (metaName) setUserName(metaName)
+
+      // 2. Try profiles table — silently skip if table doesn't exist (404)
+      const { data: profileData, error: profileError } = await supabase
         .from("profiles")
         .select("full_name")
         .eq("id", userId)
         .single()
 
-      if (profileData?.full_name) {
+      if (!profileError && profileData?.full_name) {
         setUserName(profileData.full_name)
       }
 
+      // 3. Fetch applications
       const { data } = await supabase
         .from("applications")
         .select("id, company_name, job_title, application_date, application_method, notes, location")
@@ -69,12 +75,12 @@ export function FollowUpDrafter() {
     setDrafts((prev) => ({
       ...prev,
       [app.id]: { status: "loading", email: "", error: "" },
-    }));
-    setExpanded(app.id);
+    }))
+    setExpanded(app.id)
 
     const daysSince = Math.floor(
       (Date.now() - new Date(app.application_date).getTime()) / (1000 * 60 * 60 * 24)
-    );
+    )
 
     const prompt = `Write a concise, professional follow-up email for a job application:
 - Role: ${app.job_title}
@@ -91,16 +97,22 @@ Requirements:
 - Express continued interest and ask about next steps
 - Use "I" as the sender
 - Sign off with the name: ${userName || "[Your Name]"}
-- Plain text only, no markdown.`;
+- Plain text only, no markdown.`
 
     try {
-      const emailText = await generateFollowUpAction(prompt);
+      const emailText = await generateFollowUpAction(prompt)
+
+      // Guard: if action returned undefined/empty, surface a real error
+      if (!emailText || typeof emailText !== "string" || emailText.trim() === "") {
+        throw new Error("AI returned an empty response. Check your Gemini API key or try again.")
+      }
+
       setDrafts((prev) => ({
         ...prev,
         [app.id]: { status: "done", email: emailText, error: "" },
-      }));
+      }))
     } catch (err: any) {
-      console.error("Drafting Error:", err);
+      console.error("Drafting Error:", err)
       setDrafts((prev) => ({
         ...prev,
         [app.id]: {
@@ -108,9 +120,9 @@ Requirements:
           email: "",
           error: err.message || "Failed to generate. Please try again later.",
         },
-      }));
+      }))
     }
-  };
+  }
 
   const copyToClipboard = async (id: string, text: string) => {
     await navigator.clipboard.writeText(text)
@@ -118,6 +130,7 @@ Requirements:
     setTimeout(() => setCopied(null), 2000)
   }
 
+  // Only called when draft.email is a confirmed non-empty string
   const getGmailComposeUrl = (emailBody: string) => {
     const lines = emailBody.split("\n")
     const subjectLine = lines[0].replace("Subject: ", "").trim()
@@ -168,10 +181,20 @@ Requirements:
       {/* Header hint */}
       <div
         className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs"
-        style={{ backgroundColor: "rgba(74,222,128,0.05)", border: "1px solid rgba(74,222,128,0.15)", color: "rgba(255,255,255,0.4)" }}
+        style={{
+          backgroundColor: "rgba(74,222,128,0.05)",
+          border: "1px solid rgba(74,222,128,0.15)",
+          color: "rgba(255,255,255,0.4)",
+        }}
       >
         <Sparkles className="h-3 w-3 shrink-0" style={{ color: "#4ade80" }} />
-        {apps.length} application{apps.length > 1 ? "s" : ""} with status <span className="text-blue-400 mx-1 font-medium">Applied</span> — click Generate to draft a follow-up
+        {apps.length} application{apps.length > 1 ? "s" : ""} with status{" "}
+        <span className="text-blue-400 mx-1 font-medium">Applied</span> — click Generate to draft a follow-up
+        {userName && (
+          <span className="ml-auto shrink-0" style={{ color: "rgba(74,222,128,0.6)" }}>
+            Signing as: {userName}
+          </span>
+        )}
       </div>
 
       {/* Application list */}
@@ -187,19 +210,24 @@ Requirements:
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.04 }}
             className="rounded-xl overflow-hidden"
-            style={{ border: "1px solid rgba(255,255,255,0.08)", backgroundColor: "rgba(255,255,255,0.02)" }}
+            style={{
+              border: "1px solid rgba(255,255,255,0.08)",
+              backgroundColor: "rgba(255,255,255,0.02)",
+            }}
           >
             {/* App row */}
             <div className="flex items-center gap-3 px-4 py-3.5">
-              {/* Icon */}
               <div
                 className="h-9 w-9 rounded-lg flex items-center justify-center shrink-0 text-sm font-bold"
-                style={{ backgroundColor: "rgba(74,222,128,0.1)", color: "#4ade80", border: "1px solid rgba(74,222,128,0.2)" }}
+                style={{
+                  backgroundColor: "rgba(74,222,128,0.1)",
+                  color: "#4ade80",
+                  border: "1px solid rgba(74,222,128,0.2)",
+                }}
               >
                 {app.company_name.charAt(0).toUpperCase()}
               </div>
 
-              {/* Info */}
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-white truncate">{app.company_name}</p>
                 <div className="flex items-center gap-2 mt-0.5">
@@ -207,23 +235,25 @@ Requirements:
                     {app.job_title}
                   </span>
                   <span style={{ color: "rgba(255,255,255,0.15)" }}>·</span>
-                  <span className="text-xs flex items-center gap-1 shrink-0" style={{ color: "rgba(255,255,255,0.3)" }}>
+                  <span
+                    className="text-xs flex items-center gap-1 shrink-0"
+                    style={{ color: "rgba(255,255,255,0.3)" }}
+                  >
                     <Clock className="h-2.5 w-2.5" />
                     {formatDate(app.application_date)}
                   </span>
                 </div>
               </div>
 
-              {/* Actions */}
               <div className="flex items-center gap-2 shrink-0">
-                {/* Generate / Regenerate button */}
                 <Button
                   size="sm"
                   onClick={() => generateDraft(app)}
                   disabled={isLoading}
                   className="h-7 px-3 text-xs gap-1.5 font-medium"
                   style={{
-                    backgroundColor: draft?.status === "done" ? "rgba(74,222,128,0.08)" : "rgba(74,222,128,0.15)",
+                    backgroundColor:
+                      draft?.status === "done" ? "rgba(74,222,128,0.08)" : "rgba(74,222,128,0.15)",
                     border: "1px solid rgba(74,222,128,0.3)",
                     color: "#4ade80",
                   }}
@@ -238,7 +268,6 @@ Requirements:
                   {isLoading ? "Writing..." : draft?.status === "done" ? "Redo" : "Generate"}
                 </Button>
 
-                {/* Expand toggle if draft exists */}
                 {draft?.status === "done" && (
                   <button
                     onClick={() => setExpanded(isExpanded ? null : app.id)}
@@ -263,12 +292,13 @@ Requirements:
                 >
                   <div className="px-4 py-4 space-y-3">
                     {draft.status === "error" && (
-                      <p className="text-xs" style={{ color: "#f87171" }}>{draft.error}</p>
+                      <p className="text-xs" style={{ color: "#f87171" }}>
+                        {draft.error}
+                      </p>
                     )}
 
-                    {draft.status === "done" && (
+                    {draft.status === "done" && draft.email && (
                       <>
-                        {/* Email draft */}
                         <div
                           className="rounded-lg p-3 font-mono text-xs leading-relaxed whitespace-pre-wrap"
                           style={{
@@ -279,10 +309,9 @@ Requirements:
                             overflowY: "auto",
                           }}
                         >
-                          {/* Highlight subject line */}
-                          {draft.email.split("\n").map((line, i) => (
-                            <span key={i}>
-                              {i === 0 && line.startsWith("Subject:") ? (
+                          {draft.email.split("\n").map((line, idx) => (
+                            <span key={idx}>
+                              {idx === 0 && line.startsWith("Subject:") ? (
                                 <span style={{ color: "#4ade80", fontWeight: 600 }}>{line}</span>
                               ) : (
                                 line
@@ -292,16 +321,15 @@ Requirements:
                           ))}
                         </div>
 
-                        {/* Bottom actions row */}
                         <div className="flex items-center justify-between gap-3">
-                          {/* Left: Copy + Gmail buttons */}
                           <div className="flex items-center gap-2">
                             <Button
                               size="sm"
                               onClick={() => copyToClipboard(app.id, draft.email)}
                               className="h-7 px-3 text-xs gap-1.5"
                               style={{
-                                backgroundColor: copied === app.id ? "rgba(74,222,128,0.2)" : "rgba(255,255,255,0.06)",
+                                backgroundColor:
+                                  copied === app.id ? "rgba(74,222,128,0.2)" : "rgba(255,255,255,0.06)",
                                 border: "1px solid rgba(255,255,255,0.12)",
                                 color: copied === app.id ? "#4ade80" : "rgba(255,255,255,0.6)",
                               }}
@@ -313,7 +341,6 @@ Requirements:
                               )}
                             </Button>
 
-                            {/* Open in Gmail button */}
                             <a
                               href={getGmailComposeUrl(draft.email)}
                               target="_blank"
@@ -335,7 +362,6 @@ Requirements:
                             </a>
                           </div>
 
-                          {/* Right: Find HR email */}
                           <a
                             href={getGoogleSearchUrl(app.company_name)}
                             target="_blank"
