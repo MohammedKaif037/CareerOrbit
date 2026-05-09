@@ -33,12 +33,24 @@ export function FollowUpDrafter() {
   const [drafts, setDrafts] = useState<Record<string, DraftState>>({})
   const [expanded, setExpanded] = useState<string | null>(null)
   const [copied, setCopied] = useState<string | null>(null)
+  const [userName, setUserName] = useState<string>("")
 
   useEffect(() => {
     async function fetchApplied() {
       const { data: userData } = await supabase.auth.getUser()
       const userId = userData?.user?.id
       if (!userId) return
+
+      // Fetch the user's saved full name from profiles
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("id", userId)
+        .single()
+
+      if (profileData?.full_name) {
+        setUserName(profileData.full_name)
+      }
 
       const { data } = await supabase
         .from("applications")
@@ -77,7 +89,8 @@ Requirements:
 - Keep it under 120 words
 - Friendly but professional tone
 - Express continued interest and ask about next steps
-- Use "I" and leave a placeholder for the signature
+- Use "I" as the sender
+- Sign off with the name: ${userName || "[Your Name]"}
 - Plain text only, no markdown.`;
 
     try {
