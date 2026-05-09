@@ -54,19 +54,17 @@ export function FollowUpDrafter() {
   }, [])
 
   const generateDraft = async (app: Application) => {
-  // 1. Set UI to loading state
-  setDrafts((prev) => ({
-    ...prev,
-    [app.id]: { status: "loading", email: "", error: "" },
-  }));
-  setExpanded(app.id);
+    setDrafts((prev) => ({
+      ...prev,
+      [app.id]: { status: "loading", email: "", error: "" },
+    }));
+    setExpanded(app.id);
 
-  // 2. Calculate logic for the prompt
-  const daysSince = Math.floor(
-    (Date.now() - new Date(app.application_date).getTime()) / (1000 * 60 * 60 * 24)
-  );
+    const daysSince = Math.floor(
+      (Date.now() - new Date(app.application_date).getTime()) / (1000 * 60 * 60 * 24)
+    );
 
-  const prompt = `Write a concise, professional follow-up email for a job application:
+    const prompt = `Write a concise, professional follow-up email for a job application:
 - Role: ${app.job_title}
 - Company: ${app.company_name}
 - Applied via: ${app.application_method}
@@ -82,33 +80,36 @@ Requirements:
 - Use "I" and leave a placeholder for the signature
 - Plain text only, no markdown.`;
 
-  try {
-    // 3. Call the Server Action
-    const emailText = await generateFollowUpAction(prompt);
-
-    // 4. Update UI with the result
-    setDrafts((prev) => ({
-      ...prev,
-      [app.id]: { status: "done", email: emailText, error: "" },
-    }));
-  } catch (err: any) {
-    // 5. Handle any errors (API down, key missing, etc.)
-    console.error("Drafting Error:", err);
-    setDrafts((prev) => ({
-      ...prev,
-      [app.id]: {
-        status: "error",
-        email: "",
-        error: err.message || "Failed to generate. Please try again later.",
-      },
-    }));
-  }
-};
+    try {
+      const emailText = await generateFollowUpAction(prompt);
+      setDrafts((prev) => ({
+        ...prev,
+        [app.id]: { status: "done", email: emailText, error: "" },
+      }));
+    } catch (err: any) {
+      console.error("Drafting Error:", err);
+      setDrafts((prev) => ({
+        ...prev,
+        [app.id]: {
+          status: "error",
+          email: "",
+          error: err.message || "Failed to generate. Please try again later.",
+        },
+      }));
+    }
+  };
 
   const copyToClipboard = async (id: string, text: string) => {
     await navigator.clipboard.writeText(text)
     setCopied(id)
     setTimeout(() => setCopied(null), 2000)
+  }
+
+  const getGmailComposeUrl = (emailBody: string) => {
+    const lines = emailBody.split("\n")
+    const subjectLine = lines[0].replace("Subject: ", "").trim()
+    const body = lines.slice(2).join("\n").trim()
+    return `https://mail.google.com/mail/u/0/?view=cm&fs=1&to=${encodeURIComponent("hr@gmail.com")}&su=${encodeURIComponent(subjectLine)}&body=${encodeURIComponent(body)}`
   }
 
   const getGoogleSearchUrl = (companyName: string) => {
@@ -280,25 +281,48 @@ Requirements:
 
                         {/* Bottom actions row */}
                         <div className="flex items-center justify-between gap-3">
-                          {/* Copy button */}
-                          <Button
-                            size="sm"
-                            onClick={() => copyToClipboard(app.id, draft.email)}
-                            className="h-7 px-3 text-xs gap-1.5"
-                            style={{
-                              backgroundColor: copied === app.id ? "rgba(74,222,128,0.2)" : "rgba(255,255,255,0.06)",
-                              border: "1px solid rgba(255,255,255,0.12)",
-                              color: copied === app.id ? "#4ade80" : "rgba(255,255,255,0.6)",
-                            }}
-                          >
-                            {copied === app.id ? (
-                              <><CheckCheck className="h-3 w-3" /> Copied!</>
-                            ) : (
-                              <><Copy className="h-3 w-3" /> Copy email</>
-                            )}
-                          </Button>
+                          {/* Left: Copy + Gmail buttons */}
+                          <div className="flex items-center gap-2">
+                            <Button
+                              size="sm"
+                              onClick={() => copyToClipboard(app.id, draft.email)}
+                              className="h-7 px-3 text-xs gap-1.5"
+                              style={{
+                                backgroundColor: copied === app.id ? "rgba(74,222,128,0.2)" : "rgba(255,255,255,0.06)",
+                                border: "1px solid rgba(255,255,255,0.12)",
+                                color: copied === app.id ? "#4ade80" : "rgba(255,255,255,0.6)",
+                              }}
+                            >
+                              {copied === app.id ? (
+                                <><CheckCheck className="h-3 w-3" /> Copied!</>
+                              ) : (
+                                <><Copy className="h-3 w-3" /> Copy</>
+                              )}
+                            </Button>
 
-                          {/* Find HR email search link */}
+                            {/* Open in Gmail button */}
+                            <a
+                              href={getGmailComposeUrl(draft.email)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              <Button
+                                size="sm"
+                                className="h-7 px-3 text-xs gap-1.5"
+                                style={{
+                                  backgroundColor: "rgba(234,67,53,0.12)",
+                                  border: "1px solid rgba(234,67,53,0.3)",
+                                  color: "#ea4335",
+                                }}
+                              >
+                                <Mail className="h-3 w-3" />
+                                Open in Gmail
+                                <ExternalLink className="h-2.5 w-2.5" />
+                              </Button>
+                            </a>
+                          </div>
+
+                          {/* Right: Find HR email */}
                           <a
                             href={getGoogleSearchUrl(app.company_name)}
                             target="_blank"
@@ -307,7 +331,7 @@ Requirements:
                             style={{ color: "rgba(96,165,250,0.7)" }}
                           >
                             <Search className="h-3 w-3" />
-                            Find HR email for {app.company_name}
+                            Find HR email
                             <ExternalLink className="h-2.5 w-2.5" />
                           </a>
                         </div>
