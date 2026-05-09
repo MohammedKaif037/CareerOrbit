@@ -8,126 +8,108 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
-import { 
-  AlertDialog, 
-  AlertDialogAction, 
-  AlertDialogCancel, 
-  AlertDialogContent, 
-  AlertDialogDescription, 
-  AlertDialogFooter, 
-  AlertDialogHeader, 
-  AlertDialogTitle, 
-  AlertDialogTrigger 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger
 } from "@/components/ui/alert-dialog"
 import { toast } from "@/components/ui/use-toast"
 import { Toaster } from "@/components/ui/toaster"
-import { 
-  UserCircle, 
-  Lock, 
-  Bell, 
-  LogOut, 
-  Trash2, 
-  Save 
+import {
+  UserCircle,
+  Lock,
+  Bell,
+  LogOut,
+  Trash2,
+  Save
 } from "lucide-react"
 
-// Type for user profile
 type UserProfile = {
-  id: string;
-  email: string;
-  full_name?: string;
-  avatar_url?: string;
+  id: string
+  email: string
+  full_name: string
+  avatar_url: string
 }
 
-// Type for user preferences
 type UserPreferences = {
-  email_notifications: boolean;
-  dark_mode: boolean;
-  job_application_reminder: boolean;
+  email_notifications: boolean
+  dark_mode: boolean
+  job_application_reminder: boolean
 }
 
 export default function SettingsPage() {
   const router = useRouter()
-  
-  // User Profile State
+
   const [profile, setProfile] = useState<UserProfile>({
-    id: '',
-    email: '',
-    full_name: '',
-    avatar_url: ''
+    id: "",
+    email: "",
+    full_name: "",
+    avatar_url: "",
   })
 
-  // User Preferences State
   const [preferences, setPreferences] = useState<UserPreferences>({
     email_notifications: false,
     dark_mode: false,
-    job_application_reminder: false
+    job_application_reminder: false,
   })
 
-  // Password Change State
   const [passwordChange, setPasswordChange] = useState({
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: ''
+    newPassword: "",
+    confirmPassword: "",
   })
 
-  // Loading and Error States
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  // Fetch user profile and preferences on component mount
   useEffect(() => {
     async function fetchUserData() {
       setIsLoading(true)
       try {
-        // Fetch user authentication data
         const { data: authData, error: authError } = await supabase.auth.getUser()
-        
-        if (authError) {
-          toast({
-            title: "Error",
-            description: "Unable to fetch user data",
-            variant: "destructive"
-          })
+        if (authError || !authData.user) {
+          toast({ title: "Error", description: "Unable to fetch user data", variant: "destructive" })
           return
         }
 
-        // Fetch user profile from a hypothetical profiles table
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', authData.user?.id)
+        const userId = authData.user.id
+        const userEmail = authData.user.email || ""
+
+        // Fetch profile — upsert a blank row if it doesn't exist yet
+        const { data: profileData } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", userId)
           .single()
 
-        // Fetch user preferences from a hypothetical preferences table
-        const { data: preferencesData, error: preferencesError } = await supabase
-          .from('user_preferences')
-          .select('*')
-          .eq('user_id', authData.user?.id)
+        // Fetch preferences
+        const { data: preferencesData } = await supabase
+          .from("user_preferences")
+          .select("*")
+          .eq("user_id", userId)
           .single()
 
-        // Update states
-        if (profileData) {
-          setProfile({
-            id: profileData.id,
-            email: authData.user?.email || '',
-            full_name: profileData.full_name || '',
-            avatar_url: profileData.avatar_url || ''
-          })
-        }
+        setProfile({
+          id: userId,
+          email: userEmail,
+          full_name: profileData?.full_name || "",
+          avatar_url: profileData?.avatar_url || "",
+        })
 
         if (preferencesData) {
           setPreferences({
             email_notifications: preferencesData.email_notifications || false,
             dark_mode: preferencesData.dark_mode || false,
-            job_application_reminder: preferencesData.job_application_reminder || false
+            job_application_reminder: preferencesData.job_application_reminder || false,
           })
         }
-      } catch (err) {
-        toast({
-          title: "Unexpected Error",
-          description: "An unexpected error occurred",
-          variant: "destructive"
-        })
+      } catch {
+        toast({ title: "Unexpected Error", description: "An unexpected error occurred", variant: "destructive" })
       } finally {
         setIsLoading(false)
       }
@@ -136,180 +118,128 @@ export default function SettingsPage() {
     fetchUserData()
   }, [])
 
-  // Handle profile update
+  // ✅ FIX: uses profile.id which is now set from auth before saving
   const handleProfileUpdate = async (e: React.FormEvent) => {
     e.preventDefault()
-    setIsSubmitting(true)
-
-    try {
-      // Update profile in profiles table
-      const { error } = await supabase
-        .from('profiles')
-        .upsert({
-          id: profile.id,
-          full_name: profile.full_name,
-          avatar_url: profile.avatar_url
-        })
-
-      if (error) {
-        toast({
-          title: "Update Failed",
-          description: error.message,
-          variant: "destructive"
-        })
-      } else {
-        toast({
-          title: "Profile Updated",
-          description: "Your profile has been successfully updated",
-        })
-      }
-    } catch (err) {
-      toast({
-        title: "Unexpected Error",
-        description: "An unexpected error occurred",
-        variant: "destructive"
-      })
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
-
-  // Handle password change
-  const handlePasswordChange = async (e: React.FormEvent) => {
-    e.preventDefault()
-    
-    // Validate password inputs
-    if (passwordChange.newPassword !== passwordChange.confirmPassword) {
-      toast({
-        title: "Password Mismatch",
-        description: "New passwords do not match",
-        variant: "destructive"
-      })
+    if (!profile.id) {
+      toast({ title: "Not ready", description: "User session not loaded yet.", variant: "destructive" })
       return
     }
-
     setIsSubmitting(true)
-
     try {
-      // Update password
-      const { error } = await supabase.auth.updateUser({
-        password: passwordChange.newPassword
-      })
+      const { error } = await supabase
+        .from("profiles")
+        .upsert(
+          { id: profile.id, full_name: profile.full_name, avatar_url: profile.avatar_url },
+          { onConflict: "id" }
+        )
 
       if (error) {
-        toast({
-          title: "Password Update Failed",
-          description: error.message,
-          variant: "destructive"
-        })
+        toast({ title: "Update Failed", description: error.message, variant: "destructive" })
       } else {
-        toast({
-          title: "Password Updated",
-          description: "Your password has been successfully changed",
-        })
-        
-        // Reset password fields
-        setPasswordChange({
-          currentPassword: '',
-          newPassword: '',
-          confirmPassword: ''
-        })
+        toast({ title: "Profile Updated", description: "Your profile has been saved." })
       }
-    } catch (err) {
-      toast({
-        title: "Unexpected Error",
-        description: "An unexpected error occurred",
-        variant: "destructive"
-      })
+    } catch {
+      toast({ title: "Unexpected Error", description: "An unexpected error occurred", variant: "destructive" })
     } finally {
       setIsSubmitting(false)
     }
   }
 
-  // Handle preferences update
+  const handlePasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (passwordChange.newPassword !== passwordChange.confirmPassword) {
+      toast({ title: "Password Mismatch", description: "New passwords do not match", variant: "destructive" })
+      return
+    }
+    setIsSubmitting(true)
+    try {
+      const { error } = await supabase.auth.updateUser({ password: passwordChange.newPassword })
+      if (error) {
+        toast({ title: "Password Update Failed", description: error.message, variant: "destructive" })
+      } else {
+        toast({ title: "Password Updated", description: "Your password has been changed." })
+        setPasswordChange({ newPassword: "", confirmPassword: "" })
+      }
+    } catch {
+      toast({ title: "Unexpected Error", description: "An unexpected error occurred", variant: "destructive" })
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
   const handlePreferencesUpdate = async () => {
     setIsSubmitting(true)
-
     try {
-      // Update preferences in user_preferences table
       const { error } = await supabase
-        .from('user_preferences')
-        .upsert({
-          user_id: profile.id,
-          email_notifications: preferences.email_notifications,
-          dark_mode: preferences.dark_mode,
-          job_application_reminder: preferences.job_application_reminder
-        })
+        .from("user_preferences")
+        .upsert(
+          {
+            user_id: profile.id,
+            email_notifications: preferences.email_notifications,
+            dark_mode: preferences.dark_mode,
+            job_application_reminder: preferences.job_application_reminder,
+          },
+          { onConflict: "user_id" }
+        )
 
       if (error) {
-        toast({
-          title: "Preferences Update Failed",
-          description: error.message,
-          variant: "destructive"
-        })
+        toast({ title: "Preferences Update Failed", description: error.message, variant: "destructive" })
       } else {
-        toast({
-          title: "Preferences Updated",
-          description: "Your preferences have been successfully updated",
-        })
+        toast({ title: "Preferences Updated", description: "Your preferences have been saved." })
       }
-    } catch (err) {
-      toast({
-        title: "Unexpected Error",
-        description: "An unexpected error occurred",
-        variant: "destructive"
-      })
+    } catch {
+      toast({ title: "Unexpected Error", description: "An unexpected error occurred", variant: "destructive" })
     } finally {
       setIsSubmitting(false)
     }
   }
 
-  // Handle account deletion
+  // ✅ FIX: client-side deletion — delete user data first, then call the
+  //    Supabase Edge Function / API route you control, then sign out.
+  //    supabase.auth.admin.deleteUser() is server-only and will throw on client.
   const handleAccountDeletion = async () => {
     setIsSubmitting(true)
-
     try {
-      // Delete user account and related data
-      const { error } = await supabase.auth.admin.deleteUser(profile.id)
+      // 1. Delete user's own data from your tables
+      await supabase.from("applications").delete().eq("user_id", profile.id)
+      await supabase.from("user_preferences").delete().eq("user_id", profile.id)
+      await supabase.from("profiles").delete().eq("id", profile.id)
 
-      if (error) {
-        toast({
-          title: "Account Deletion Failed",
-          description: error.message,
-          variant: "destructive"
-        })
-      } else {
-        // Sign out and redirect to home/landing page
-        await supabase.auth.signOut()
-        router.push('/')
+      // 2. Call your own API route that runs admin.deleteUser() server-side
+      //    Create this at: app/api/delete-account/route.ts  (see note below)
+      const res = await fetch("/api/delete-account", { method: "DELETE" })
+      if (!res.ok) {
+        const { error } = await res.json()
+        toast({ title: "Account Deletion Failed", description: error, variant: "destructive" })
+        return
       }
-    } catch (err) {
-      toast({
-        title: "Unexpected Error",
-        description: "An unexpected error occurred",
-        variant: "destructive"
-      })
+
+      // 3. Sign out and redirect
+      await supabase.auth.signOut()
+      router.push("/")
+    } catch {
+      toast({ title: "Unexpected Error", description: "An unexpected error occurred", variant: "destructive" })
     } finally {
       setIsSubmitting(false)
     }
   }
 
-  // Handle sign out
   const handleSignOut = async () => {
     try {
       await supabase.auth.signOut()
-      router.push('/')
-    } catch (err) {
-      toast({
-        title: "Sign Out Failed",
-        description: "Unable to sign out",
-        variant: "destructive"
-      })
+      router.push("/")
+    } catch {
+      toast({ title: "Sign Out Failed", description: "Unable to sign out", variant: "destructive" })
     }
   }
 
   if (isLoading) {
-    return <div>Loading...</div>
+    return (
+      <div className="flex items-center justify-center py-16">
+        <p className="text-muted-foreground text-sm">Loading settings...</p>
+      </div>
+    )
   }
 
   return (
@@ -329,24 +259,19 @@ export default function SettingsPage() {
           <form onSubmit={handleProfileUpdate} className="space-y-4">
             <div>
               <Label>Email (Read Only)</Label>
-              <Input 
-                type="email" 
-                value={profile.email} 
-                readOnly 
-                className="bg-muted cursor-not-allowed"
-              />
+              <Input type="email" value={profile.email} readOnly className="bg-muted cursor-not-allowed" />
             </div>
             <div>
               <Label>Full Name</Label>
-              <Input 
-                type="text" 
-                value={profile.full_name} 
-                onChange={(e) => setProfile({...profile, full_name: e.target.value})}
+              <Input
+                type="text"
+                value={profile.full_name}
+                onChange={(e) => setProfile({ ...profile, full_name: e.target.value })}
                 placeholder="Enter your full name"
               />
             </div>
             <Button type="submit" disabled={isSubmitting}>
-              <Save className="mr-2" /> Save Profile
+              <Save className="mr-2 h-4 w-4" /> Save Profile
             </Button>
           </form>
         </CardContent>
@@ -364,30 +289,24 @@ export default function SettingsPage() {
           <form onSubmit={handlePasswordChange} className="space-y-4">
             <div>
               <Label>New Password</Label>
-              <Input 
-                type="password" 
+              <Input
+                type="password"
                 value={passwordChange.newPassword}
-                onChange={(e) => setPasswordChange({
-                  ...passwordChange, 
-                  newPassword: e.target.value
-                })}
+                onChange={(e) => setPasswordChange({ ...passwordChange, newPassword: e.target.value })}
                 placeholder="Enter new password"
               />
             </div>
             <div>
               <Label>Confirm New Password</Label>
-              <Input 
-                type="password" 
+              <Input
+                type="password"
                 value={passwordChange.confirmPassword}
-                onChange={(e) => setPasswordChange({
-                  ...passwordChange, 
-                  confirmPassword: e.target.value
-                })}
+                onChange={(e) => setPasswordChange({ ...passwordChange, confirmPassword: e.target.value })}
                 placeholder="Confirm new password"
               />
             </div>
             <Button type="submit" disabled={isSubmitting}>
-              <Lock className="mr-2" /> Change Password
+              <Lock className="mr-2 h-4 w-4" /> Change Password
             </Button>
           </form>
         </CardContent>
@@ -404,45 +323,34 @@ export default function SettingsPage() {
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
             <Label>Email Notifications</Label>
-            <Switch 
+            <Switch
               checked={preferences.email_notifications}
-              onCheckedChange={(checked) => setPreferences({
-                ...preferences, 
-                email_notifications: checked
-              })}
+              onCheckedChange={(checked) => setPreferences({ ...preferences, email_notifications: checked })}
             />
           </div>
           <div className="flex items-center justify-between">
             <Label>Dark Mode</Label>
-            <Switch 
+            <Switch
               checked={preferences.dark_mode}
-              onCheckedChange={(checked) => setPreferences({
-                ...preferences, 
-                dark_mode: checked
-              })}
+              onCheckedChange={(checked) => setPreferences({ ...preferences, dark_mode: checked })}
             />
           </div>
           <div className="flex items-center justify-between">
             <Label>Job Application Reminders</Label>
-            <Switch 
+            <Switch
               checked={preferences.job_application_reminder}
-              onCheckedChange={(checked) => setPreferences({
-                ...preferences, 
-                job_application_reminder: checked
-              })}
+              onCheckedChange={(checked) =>
+                setPreferences({ ...preferences, job_application_reminder: checked })
+              }
             />
           </div>
-          <Button 
-            onClick={handlePreferencesUpdate} 
-            disabled={isSubmitting}
-            className="w-full mt-4"
-          >
-            <Save className="mr-2" /> Save Preferences
+          <Button onClick={handlePreferencesUpdate} disabled={isSubmitting} className="w-full mt-4">
+            <Save className="mr-2 h-4 w-4" /> Save Preferences
           </Button>
         </CardContent>
       </Card>
 
-      {/* Account Actions Section */}
+      {/* Danger Zone */}
       <Card className="glass-card">
         <CardHeader>
           <CardTitle className="text-destructive flex items-center">
@@ -454,15 +362,10 @@ export default function SettingsPage() {
           <div className="flex justify-between items-center">
             <div>
               <h3 className="font-medium">Sign Out</h3>
-              <p className="text-sm text-muted-foreground">
-                Log out of your account on this device
-              </p>
+              <p className="text-sm text-muted-foreground">Log out of your account on this device</p>
             </div>
-            <Button 
-              variant="outline" 
-              onClick={handleSignOut}
-            >
-              <LogOut className="mr-2" /> Sign Out
+            <Button variant="outline" onClick={handleSignOut}>
+              <LogOut className="mr-2 h-4 w-4" /> Sign Out
             </Button>
           </div>
 
@@ -476,20 +379,20 @@ export default function SettingsPage() {
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button variant="destructive">
-                  <Trash2 className="mr-2" /> Delete Account
+                  <Trash2 className="mr-2 h-4 w-4" /> Delete Account
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
                   <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    This action cannot be undone. This will permanently delete your
-                    account and remove all your data from our servers.
+                    This action cannot be undone. This will permanently delete your account and remove all
+                    your data from our servers.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction 
+                  <AlertDialogAction
                     onClick={handleAccountDeletion}
                     className="bg-destructive text-destructive-foreground"
                   >
@@ -503,4 +406,4 @@ export default function SettingsPage() {
       </Card>
     </div>
   )
-              }
+}
